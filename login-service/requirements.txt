@@ -1,0 +1,6 @@
+fastapi
+uvicorn[standard]
+tortoise-orm
+passlib[bcrpyt]
+httpx
+asyncpg

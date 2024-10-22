@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: transmuxing-service
+  labels:
+    app: transmuxing-service
+spec:
+  serviceName: "transmuxing-service"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: transmuxing-service
+  template:
+    metadata:
+      labels:
+        app: transmuxing-service
+    spec:
+      containers:
+        - name: transmuxing-service
+          image: transmuxing-service:latest # Replace with your image
+          ports:
+            - containerPort: 8000
+          env:
+            - name: RTMP_INGEST_SERVICE_URL
+              value: "rtmp://rtmp-ingest-service/live/"
+            - name: HLS_OUTPUT_BASE
+              value: "/tmp/hls/"
+            - name: RECORDING_OUTPUT_BASE
+              value: "/tmp/recordings/"
+          volumeMounts:
+            - name: hls-data
+              mountPath: /tmp/hls
+            - name: recording-data
+              mountPath: /tmp/recordings
+      volumes:
+        - name: hls-data
+          persistentVolumeClaim:
+            claimName: hls-pvc
+        - name: recording-data
+          persistentVolumeClaim:
+            claimName: record-pvc

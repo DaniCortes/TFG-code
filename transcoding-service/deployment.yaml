@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: transcoding-service
+  labels:
+    app: transcoding-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: transcoding-service
+  template:
+    metadata:
+      labels:
+        app: transcoding-service
+    spec:
+      containers:
+        - name: transcoding-service
+          image: transcoding-service:latest # Replace with your image
+          ports:
+            - containerPort: 8000
+          env:
+            - name: HLS_OUTPUT_BASE
+              value: "/tmp/hls/"
+            - name: RECORDING_BASE
+              value: "/tmp/recordings/"
+            - name: STREAM_INFO_SERVICE_URL
+              value: "http://stream-info-service:8000"
+          volumeMounts:
+            - name: hls-data
+              mountPath: /tmp/hls
+            - name: recording-data
+              mountPath: /tmp/recordings
+          resources:
+            requests:
+              memory: "4Gi"
+              cpu: "4"
+            limits:
+              memory: "8Gi"
+              cpu: "6"
+      volumes:
+        - name: hls-data
+          persistentVolumeClaim:
+            claimName: hls-pvc
+        - name: recording-data
+          persistentVolumeClaim:
+            claimName: record-pvc

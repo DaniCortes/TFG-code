@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rtmp-ingest
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: rtmp-ingest
+  template:
+    metadata:
+      labels:
+        app: rtmp-ingest
+    spec:
+      containers:
+        - name: rtmp-ingest
+          image: rtmp-ingest:latest
+          ports:
+            - containerPort: 1935
+      volumeMounts:
+        - name: rtmp-ingest-storage
+          mountPath: /data/rtmp-ingest

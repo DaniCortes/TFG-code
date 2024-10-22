@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redis-config
+data:
+  redis.conf: |
+    appendonly yes
+    appendfsync everysec
+    save 900 1
+    save 300 10
+    save 60 10000
+    dir /data/redis
+    dbfilename dump.rdb
+    maxmemory 384mb
+    maxmemory-policy allkeys-lru

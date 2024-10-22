@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: transmuxing-service
+  labels:
+    app: transmuxing-service
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: transmuxing-service
+  template:
+    metadata:
+      labels:
+        app: transmuxing-service
+    spec:
+      containers:
+        - name: transmuxing-service
+          image: your-docker-registry/transmuxing-service:latest # Replace with your image
+          ports:
+            - containerPort: 8000
+          env:
+            - name: RTMP_INPUT_BASE
+              value: "rtmp://rtmp-ingest-service/live/"
+            - name: HLS_OUTPUT_BASE
+              value: "/tmp/hls/"
+            - name: RECORDING_OUTPUT_BASE
+              value: "/tmp/recordings/"
+            - name: TRANSCODING_SERVICE_URL
+              value: "http://transcoding-service:8000"
+            - name: STREAM_INFO_SERVICE_URL
+              value: "http://stream-info-service:8000"
+          volumeMounts:
+            - name: transmuxed-data
+              mountPath: /tmp/hls
+            - name: recording-data
+              mountPath: /tmp/recordings
+      volumes:
+        - name: transmuxed-data
+          persistentVolumeClaim:
+            claimName: transmuxed-data-pvc
+        - name: recording-data
+          persistentVolumeClaim:
+            claimName: transcoded-data-pvc

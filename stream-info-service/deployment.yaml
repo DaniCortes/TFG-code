@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stream-information-service
+  labels:
+    app: stream-information-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: stream-information-service
+  template:
+    metadata:
+      labels:
+        app: stream-information-service
+    spec:
+      containers:
+        - name: stream-information-service
+          image: stream-information-service:latest
+          ports:
+            - containerPort: 8000
+          env:
+            - name: MONGO_DETAILS
+              value: "mongodb://mongo:27017"
+            - name: TRANSMUXING_SERVICE_URL
+              value: "http://transmuxing-service:8000"
+            - name: TRANSCODING_SERVICE_URL
+              value: "http://transcoding-service:8000"
+            - name: HLS_BASE_PATH
+              value: "/tmp/hls/"
+            - name: RECORDING_BASE_PATH
+              value: "/tmp/recordings/"
+            - name: POSTGRES_URL
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: POSTGRES_URL
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "1Gi"
+              cpu: "1"
