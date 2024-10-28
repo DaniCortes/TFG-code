@@ -7,3 +7,6 @@ class User(Model):
     username = fields.CharField(max_length=255)
     stream_key = fields.CharField(max_length=255)
     account_status = fields.CharField(max_length=255)
+
+    class Meta:
+        table = "users"
