@@ -16,7 +16,8 @@ CREATE TABLE users (
   last_login_date TIMESTAMP WITH TIME ZONE,
   account_status VARCHAR(255) DEFAULT 'active',
   profile_picture TEXT DEFAULT 'default_profile_picture.jpg',
-  stream_key VARCHAR(255) UNIQUE NOT NULL
+  stream_key VARCHAR(255) UNIQUE NOT NULL,
+  is_admin BOOLEAN DEFAULT FALSE
 );
 -- Create admin user
 INSERT INTO users (
@@ -24,12 +25,14 @@ INSERT INTO users (
     password,
     biography,
     account_status,
-    stream_key
+    stream_key,
+    is_admin
   )
 VALUES (
     'admin',
     '$2a$12$Ph3Xr.xnecI2Jbpr9jAIfO0ahrMbtN8yzHsz8MSNrcy59DrUPAY3a',
     'Admin user',
     'active',
-    'admin_replace_this_key'
+    'admin_replace_this_key',
+    TRUE
   );
