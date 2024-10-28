@@ -18,6 +18,6 @@ async def lifespan(app: FastAPI):
         yield
     await ConnectionHandler().close_all()
 
-app = FastAPI(title="Register Service")
+app = FastAPI(lifespan=lifespan, title="Register Service")
 
 app.include_router(register_routes.router)
