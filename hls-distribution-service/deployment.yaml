@@ -1,0 +1,51 @@
+# deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hls-distribution-service
+  labels:
+    app: hls-distribution-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: hls-distribution-service
+  template:
+    metadata:
+      labels:
+        app: hls-distribution-service
+    spec:
+      containers:
+        - name: hls-distribution-service
+          image: hls-distribution-service:latest
+          ports:
+            - containerPort: 8000
+          env:
+            - name: HLS_STREAM_BASE
+              value: /tmp/hls
+          volumeMounts:
+            - name: recordings-volume
+              mountPath: /tmp/recordings
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 15
+      volumes:
+        - name: recordings-volume
+          persistentVolumeClaim:
+            claimName: recordings-pvc # Your existing PVC
