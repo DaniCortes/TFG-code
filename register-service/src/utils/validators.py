@@ -2,8 +2,6 @@ import re
 from passlib.context import CryptContext
 from fastapi import HTTPException
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
 
 def validate_username(username: str):
     if not re.match(r"^[a-zA-Z0-9_-]+$", username):
@@ -11,4 +9,5 @@ def validate_username(username: str):
 
 
 def hash_password(password: str):
+    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
     return pwd_context.hash(password)
