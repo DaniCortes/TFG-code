@@ -9,7 +9,7 @@ from src.utils.exceptions import StreamNotFoundException
 
 class TransmuxingService:
     def __init__(self):
-        self.HLS_OUTPUT_BASE = os.getenv('HLS_OUTPUT_BASE', '/ tmp/hls/')
+        self.HLS_OUTPUT_BASE = os.getenv('HLS_OUTPUT_BASE', '/tmp/hls/')
         self.RECORDING_OUTPUT_BASE = os.getenv(
             'RECORDING_OUTPUT_BASE', '/tmp/recordings/')
         self.RTMP_INGEST_SERVICE_URL = os.getenv(
