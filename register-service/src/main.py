@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from tortoise.contrib.fastapi import register_tortoise
 from src.routes import register_routes
 
-app = FastAPI()
+app = FastAPI(title="Register Service")
 
 app.include_router(register_routes.router)
 

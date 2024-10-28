@@ -18,6 +18,6 @@ async def lifespan(app: FastAPI):
     await transcoding_service.stop_queue_processing()
 
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(lifespan=lifespan, title="Transcoding Service")
 
 app.include_router(transcoding_routes.router)

@@ -18,6 +18,6 @@ async def lifespan(app: FastAPI):
         yield
     await Tortoise.close_connections()
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(lifespan=lifespan, title="Profile Edit Service")
 
 app.include_router(profile_router)
