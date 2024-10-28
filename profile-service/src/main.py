@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 import os
 from fastapi import FastAPI
-from tortoise import Tortoise
+from tortoise.connection import ConnectionHandler
 from tortoise.contrib.fastapi import RegisterTortoise
 from src.routes.profile_routes import router as profile_router
 
@@ -16,7 +16,7 @@ async def lifespan(app: FastAPI):
         add_exception_handlers=True
     ):
         yield
-    await Tortoise.close_connections()
+    await ConnectionHandler().close_all()
 
 app = FastAPI(lifespan=lifespan, title="Profile Edit Service")
 
