@@ -36,22 +36,23 @@ class LoginService:
         return user
 
     async def get_user_token(self, user: User) -> Token:
+        user_id = str(user.user_id)
+        username = user.username
         try:
-            return await self.__fetch_token(str(user.user_id), user.username)
+            async with AsyncClient() as client:
+                response = await client.post(self.AUTH_SERVICE_URL, json={"user_id": user_id, "username": username})
+                response.raise_for_status()
+                return response.json()
 
         except HTTPStatusError as e:
             raise e
 
     async def __fetch_token(self, user_id: str, username: str) -> Token:
-        async with AsyncClient() as client:
-            response = await client.post(self.AUTH_SERVICE_URL, json={"user_id": user_id, "username": username})
-            response.raise_for_status()
-            return response.json()
 
-    # async def get_user_token(self, form_data: OAuth2PasswordRequestForm):
-    #     async with httpx.AsyncClient() as client:
-    #         response = await client.post("http://auth-service:8000/tokens", json={"username": form_data.username})
-    #         if response.status_code != 200:
-    #             raise HTTPException(
-    #                 status_code=response.status_code, detail=response.json().get("detail"))
-    #         return Token(**response.json())
+        # async def get_user_token(self, form_data: OAuth2PasswordRequestForm):
+        #     async with httpx.AsyncClient() as client:
+        #         response = await client.post("http://auth-service:8000/tokens", json={"username": form_data.username})
+        #         if response.status_code != 200:
+        #             raise HTTPException(
+        #                 status_code=response.status_code, detail=response.json().get("detail"))
+        #         return Token(**response.json())
