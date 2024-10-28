@@ -11,10 +11,9 @@ class AuthService:
         self.ALGORITHM = "HS256"
         self.ACCESS_TOKEN_EXPIRE_DAYS = 14
 
-    def create_access_token(self, user_id: str, username: str, expires_delta: timedelta | None = None):
-        user_info = {"sub", user_id}
-        user_info.update({"preferred_username": username})
-        user_info
+    def create_access_token(self, user_id: str, username: str, is_admin: bool, expires_delta: timedelta | None = None):
+        user_info = {"sub": user_id,
+                     "preferred_username": username, "is_admin": is_admin}
         if expires_delta:
             expire = datetime.now(timezone.utc) + expires_delta
         else:

@@ -11,8 +11,8 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="tokens")
 
 
 @router.post("/tokens", status_code=201, response_model=Token)
-async def create_token(user_id: str, username: str):
-    return await controller.create_token(user_id, username)
+async def create_token(user_id: str, username: str, is_admin: bool):
+    return await controller.create_token(user_id, username, is_admin)
 
 
 @router.get("/users/me", response_model=TokenData)

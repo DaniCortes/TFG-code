@@ -9,3 +9,4 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     user_id: str | None = None
     username: str | None = None
+    is_admin: bool | None = None

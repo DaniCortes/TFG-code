@@ -36,11 +36,15 @@ class LoginService:
         return user
 
     async def get_user_token(self, user: User) -> Token:
-        user_id = str(user.user_id)
-        username = user.username
+        jwt_payload = {
+            "user_id": str(user.user_id),
+            "username": user.username,
+            "is_admin": user.is_admin
+        }
+
         try:
             async with AsyncClient() as client:
-                response = await client.post(self.AUTH_SERVICE_URL, json={"user_id": user_id, "username": username})
+                response = await client.post(self.AUTH_SERVICE_URL, json=jwt_payload)
                 response.raise_for_status()
                 return response.json()
 

@@ -8,8 +8,9 @@ class AuthController:
     def __init__(self):
         self.auth_service = AuthService()
 
-    async def create_token(self, user_id: str, username: str):
-        access_token = self.auth_service.create_access_token(user_id, username)
+    async def create_token(self, user_id: str, username: str, is_admin: bool):
+        access_token = self.auth_service.create_access_token(
+            user_id, username, is_admin)
         return Token(access_token=access_token, token_type="bearer")
 
     async def get_current_user(self, token: str):
