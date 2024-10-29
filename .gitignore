@@ -1,3 +1,4 @@
 */.*-venv/
 */*-venv/
 */.vscode/
+*/istio-1.23.2/
