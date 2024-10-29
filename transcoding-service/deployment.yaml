@@ -33,7 +33,7 @@ spec:
               mountPath: /tmp/recordings
           resources:
             requests:
-              memory: "4Gi"
+              memory: "6Gi"
               cpu: "4"
             limits:
               memory: "8Gi"
