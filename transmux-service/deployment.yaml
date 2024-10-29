@@ -17,6 +17,7 @@ spec:
       containers:
         - name: transmuxing-service
           image: transmuxing-service:latest
+          imagePullPolicy: Never
           ports:
             - containerPort: 8000
           env:

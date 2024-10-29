@@ -17,6 +17,7 @@ spec:
       containers:
         - name: transcoding-service
           image: transcoding-service:latest # Replace with your image
+          imagePullPolicy: Never
           ports:
             - containerPort: 8000
           env:

@@ -17,6 +17,7 @@ spec:
       containers:
         - name: stream-information-service
           image: stream-information-service:latest
+          imagePullPolicy: Never
           ports:
             - containerPort: 8000
           env:
