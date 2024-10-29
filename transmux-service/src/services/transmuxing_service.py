@@ -34,6 +34,7 @@ class TransmuxingService:
             '-hls_time', '6',
             '-hls_list_size', '6',
             '-hls_segment_type', 'fmp4',
+            '-hls_segment_filename', f"{output_base}/stream_%03d.mp4",
             '-hls_flags', 'delete_segments+append_list',
             f"{output_base}/playlist.m3u8",
             '-f', 'mp4',
