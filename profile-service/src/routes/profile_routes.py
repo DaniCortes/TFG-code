@@ -1,11 +1,13 @@
 from fastapi import APIRouter, Depends
 from src.controllers.profile_controller import ProfileController
-from models.profile_update_model import ProfileUpdateRequest
-from src.utils.token_utils import get_current_user
+from src.services.profile_service import ProfileService
 from src.models.user_model import User
+from src.models.profile_update_model import ProfileUpdateRequest
+from src.utils.token_utils import get_current_user
 
 router = APIRouter()
-controller = ProfileController()
+service = ProfileService()
+controller = ProfileController(service)
 
 
 @router.get("/profile", response_model=User)
