@@ -8,6 +8,7 @@ from src.routes import register_routes
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    print(os.getenv("POSTGRES_URL"))
     async with RegisterTortoise(
         app=app,
         db_url=os.getenv("POSTGRES_URL"),

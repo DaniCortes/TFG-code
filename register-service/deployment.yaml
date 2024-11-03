@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: register-service
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: register-service
@@ -15,6 +15,7 @@ spec:
       containers:
         - name: register-service
           image: register-service:latest
+          imagePullPolicy: Never
           ports:
             - containerPort: 8000
           env:
@@ -23,3 +24,10 @@ spec:
                 secretKeyRef:
                   name: app-secrets
                   key: POSTGRES_URL
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
