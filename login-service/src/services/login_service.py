@@ -44,7 +44,9 @@ class LoginService:
 
         try:
             async with AsyncClient() as client:
-                response = await client.post(self.AUTH_SERVICE_URL, json=jwt_payload)
+                response = await client.post(self.AUTH_SERVICE_URL, json=jwt_payload, headers={
+                    "Content-Type": "application/json"}
+                )
                 response.raise_for_status()
                 return response.json()
 

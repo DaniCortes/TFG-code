@@ -15,6 +15,7 @@ spec:
       containers:
         - name: login-service
           image: login-service:latest
+          imagePullPolicy: Never
           ports:
             - containerPort: 8000
           env:
