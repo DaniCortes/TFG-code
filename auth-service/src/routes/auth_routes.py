@@ -1,20 +1,23 @@
 from typing import Annotated
 from fastapi import APIRouter, Depends
 from fastapi.security import OAuth2PasswordBearer
+from src.services.auth_service import AuthService
 from src.controllers.auth_controller import AuthController
 from src.models.token_models import Token, TokenData
 
 router = APIRouter()
-controller = AuthController()
+
+service = AuthService()
+controller = AuthController(service)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="tokens")
 
 
 @router.post("/tokens", status_code=201, response_model=Token)
-async def create_token(user_id: str, username: str, is_admin: bool):
-    return await controller.create_token(user_id, username, is_admin)
+async def create_token(data: TokenData):
+    return controller.create_token(data)
 
 
 @router.get("/users/me", response_model=TokenData)
 async def read_users_me(token: Annotated[str, Depends(oauth2_scheme)]):
-    return await controller.get_current_user(token)
+    return controller.get_current_user(token)
