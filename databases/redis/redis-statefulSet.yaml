@@ -19,7 +19,7 @@ spec:
           ports:
             - containerPort: 6379
           volumeMounts:
-            - name: redis-snapshots
+            - name: snapshots
               mountPath: /data
             - name: config
               mountPath: /usr/local/etc/redis
@@ -37,7 +37,7 @@ spec:
             name: redis-config
   volumeClaimTemplates:
     - metadata:
-        name: redis-snapshots
+        name: snapshots
       spec:
         accessModes: ["ReadWriteOnce"]
         storageClassName: ""

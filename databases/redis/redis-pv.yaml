@@ -7,10 +7,10 @@ spec:
     storage: 1Gi
   accessModes:
     - ReadWriteOnce
-  persistentVolumeReclaimPolicy: Retain
+  persistentVolumeReclaimPolicy: Recycle
   claimRef:
     namespace: default
-    name: redis-snapshots
+    name: snapshots-redis-0
   storageClassName: ""
   hostPath:
     path: /mnt/data/redis
