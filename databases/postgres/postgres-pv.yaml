@@ -7,10 +7,10 @@ spec:
     storage: 1Gi
   accessModes:
     - ReadWriteOnce
-  persistentVolumeReclaimPolicy: Retain
+  persistentVolumeReclaimPolicy: Recycle
   storageClassName: ""
   claimRef:
     namespace: default
-    name: postgres-storage
+    name: storage-postgres-0
   hostPath:
     path: /mnt/data/postgres

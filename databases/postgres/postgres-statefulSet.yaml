@@ -17,10 +17,12 @@ spec:
         - name: postgres
           image: postgres:17
           env:
+            - name: PGDATA
+              value: /var/lib/pgsql/data
             - name: POSTGRES_DB
               value: "stream_users"
             - name: POSTGRES_USER
-              value: "myuser"
+              value: "ps_admin"
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -31,7 +33,7 @@ spec:
           ports:
             - containerPort: 5432
           volumeMounts:
-            - name: postgres-storage
+            - name: storage
               mountPath: /var/lib/pgsql/data
             - name: init-script
               mountPath: /docker-entrypoint-initdb.d
@@ -41,7 +43,7 @@ spec:
             name: postgres-initdb-script
   volumeClaimTemplates:
     - metadata:
-        name: postgres-storage
+        name: storage
       spec:
         accessModes: ["ReadWriteOnce"]
         storageClassName: ""
