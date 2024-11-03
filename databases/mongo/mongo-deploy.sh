@@ -3,7 +3,7 @@
 cd $(dirname $(readlink -f $0))
 
 
-echo "Creando ConfigMap para inicialización de PostgreSQL..."
+echo "Creando ConfigMap para inicialización de MongoDB..."
 kubectl create configmap mongo-initdb-script --from-file=./init.js
 
 echo "Aplicando Volumen Persistente MongoDB..."
