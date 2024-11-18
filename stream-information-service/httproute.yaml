@@ -1,0 +1,29 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: stream-information-httproute
+spec:
+  parentRefs:
+    - name: my-gateway
+      namespace: istio-system
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /streams
+          method: POST
+        - path:
+            type: PathPrefix
+            value: /streams
+          method: GET
+        - path:
+            type: PathPrefix
+            value: /streams/tags/
+          method: PATCH
+        - path:
+            type: PathPrefix
+            value: /streams/status/
+          method: PATCH
+      backendRefs:
+        - name: stream-information-service
+          port: 8000
