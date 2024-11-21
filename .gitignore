@@ -1,4 +1,7 @@
 */.*-venv/
 */*-venv/
 */.vscode/
+/.vscode/
 */istio-1.23.2/
+*/*.sh
+!/deploy.sh
