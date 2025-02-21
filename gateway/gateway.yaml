@@ -22,15 +22,8 @@ spec:
         namespaces:
           from: All
     - name: rtmp
-      hostname: stream.danielcortes.dev
-      protocol: TLS
+      protocol: TCP
       port: 1935
-      tls:
-        mode: Terminate
-        certificateRefs:
-          - name: tls-secret
-            kind: Secret
-            group: ""
       allowedRoutes:
         kinds:
           - kind: TCPRoute
