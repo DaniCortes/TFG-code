@@ -1,22 +1,35 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: rtmp-ingest
+  name: rtmp-ingest-service
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
-      app: rtmp-ingest
+      app: rtmp-ingest-service
   template:
     metadata:
       labels:
-        app: rtmp-ingest
+        app: rtmp-ingest-service
     spec:
       containers:
-        - name: rtmp-ingest
-          image: rtmp-ingest:latest
+        - name: rtmp-ingest-service
+          image: tiangolo/nginx-rtmp:latest
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 1935
-      volumeMounts:
-        - name: rtmp-ingest-storage
-          mountPath: /data/rtmp-ingest
+          volumeMounts:
+            - name: rtmp-ingest-config
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "1Gi"
+              cpu: "800m"
+      volumes:
+        - name: rtmp-ingest-config
+          configMap:
+            name: rtmp-ingest-config
