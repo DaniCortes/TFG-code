@@ -4,10 +4,10 @@ metadata:
   name: hls-pv
 spec:
   capacity:
-    storage: 30Gi
+    storage: 5Gi
   accessModes:
     - ReadWriteMany
-  persistentVolumeReclaimPolicy: Retain
+  persistentVolumeReclaimPolicy: Recycle
   storageClassName: ""
   claimRef:
     namespace: default

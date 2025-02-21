@@ -5,7 +5,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteMany
-  storageClassname: ""
+  storageClassName: ""
   resources:
     requests:
-      storage: 30Gi
+      storage: 5Gi
