@@ -1,9 +1,11 @@
 import os
+
+import httpx
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
-import httpx
-from src.models.user_model import UserDB, User
 from tortoise.exceptions import DoesNotExist
+
+from src.models.user_model import User, UserDB
 
 AUTH_SERVICE_URL = os.getenv("AUTH_SERVICE_URL", "http://auth-service:8000")
 
