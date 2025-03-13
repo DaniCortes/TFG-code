@@ -200,7 +200,7 @@ class HttpService:
             {"$set": {"is_deleted": True}}
         )
 
-    async def __is_owner(self, user_id: str, stream_id: str):
+    async def _is_owner(self, user_id: str, stream_id: str):
         if stream_id == "debug":
             return True
 

@@ -115,7 +115,7 @@ class ChatController:
         if current_user is None:
             return {"message": "User is not authenticated"}
 
-        if await self.http_service.__is_owner(chat_id, current_user.user_id) or current_user.is_admin:
+        if await self.http_service._is_owner(chat_id, current_user.user_id) or current_user.is_admin:
             await self.http_service.delete_message(chat_id, message_id)
             return {"message": "Message has been deleted"}
 
