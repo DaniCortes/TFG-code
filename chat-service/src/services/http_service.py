@@ -192,15 +192,15 @@ class HttpService:
             messages.append(message)
         return messages
 
-    async def delete_message(self, room: str, message_id: str):
+    async def delete_message(self, stream_id: str, message_id: str):
         await self.messages_collection.update_one(
             {"_id": ObjectId(message_id),
-             "stream_id": room
+             "stream_id": stream_id
              },
             {"$set": {"is_deleted": True}}
         )
 
-    async def _is_owner(self, user_id: str, stream_id: str):
+    async def _is_owner(self, stream_id: str, user_id: str):
         if stream_id == "debug":
             return True
 
