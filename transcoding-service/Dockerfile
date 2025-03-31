@@ -1,4 +1,4 @@
-FROM dnl01/ffmpeg-service:python-3.12.7-bookworm
+FROM dnl01/ffmpeg-service:python-3.12-slim-bookworm
 
 WORKDIR /app
 
