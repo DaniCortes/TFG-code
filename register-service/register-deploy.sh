@@ -14,11 +14,11 @@ echo "Esperando a que el despliegue se complete"
 kubectl rollout status deployment/register-service
 
 
-echo "Eliminando imagen de servicio de edición de perfiles"
-sleep 1.5
+echo "Eliminando imagen de servicio de registro"
+sleep 5
 docker rmi register-service:latest
 
-echo "Construyendo imagen de servicio de edición de perfiles"
+echo "Construyendo imagen de servicio de registro"
 docker build -t register-service:latest .
 
 eval $(minikube docker-env -u)

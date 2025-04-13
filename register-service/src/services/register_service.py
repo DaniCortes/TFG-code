@@ -1,7 +1,8 @@
-from src.models.user_model import User
-from src.utils.validators import validate_username, hash_password
 from asyncpg.exceptions import UniqueViolationError
+
+from src.models.user_model import User
 from src.utils.stream_key_utils import generate_stream_key
+from src.utils.validators import hash_password, validate_username
 
 
 class RegisterService:

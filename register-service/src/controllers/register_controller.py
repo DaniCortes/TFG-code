@@ -1,6 +1,7 @@
 from fastapi import HTTPException
-from src.services.register_service import RegisterService
 from tortoise.exceptions import IntegrityError
+
+from src.services.register_service import RegisterService
 
 
 class RegisterController:

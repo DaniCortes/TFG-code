@@ -1,8 +1,10 @@
-from contextlib import asynccontextmanager
 import os
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
-from tortoise.contrib.fastapi import RegisterTortoise
 from tortoise.connection import ConnectionHandler
+from tortoise.contrib.fastapi import RegisterTortoise
+
 from src.routes import register_routes
 
 

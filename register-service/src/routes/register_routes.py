@@ -1,5 +1,7 @@
-from fastapi import APIRouter, Form
 from typing import Annotated
+
+from fastapi import APIRouter, Form
+
 from src.controllers.register_controller import RegisterController
 from src.services.register_service import RegisterService
 

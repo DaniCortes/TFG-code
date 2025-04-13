@@ -1,6 +1,7 @@
 import re
-from passlib.context import CryptContext
+
 from fastapi import HTTPException
+from passlib.context import CryptContext
 
 
 def validate_username(username: str):
