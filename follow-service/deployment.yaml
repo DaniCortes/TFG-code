@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: follow-service
+  labels:
+    app: follow-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: follow-service
+  template:
+    metadata:
+      labels:
+        app: follow-service
+    spec:
+      containers:
+      - name: follow-service
+        image: follow-service:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8000
+        env:
+        - name: MONGO_URL
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: MONGO_URL
+        - name: AUTH_SERVICE_URL
+          value: "http://auth-service:8000"
+        - name: USER_SERVICE_URL
+          value: "http://user-service:8000"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Gi"
+            cpu: "500m"
