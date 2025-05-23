@@ -2,7 +2,6 @@
 
 cd $(dirname $(readlink -f $0))
 
-
 echo "Creando ConfigMap para inicialización de PostgreSQL..."
 kubectl create configmap postgres-initdb-script --from-file=./init.sql
 

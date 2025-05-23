@@ -14,39 +14,42 @@ spec:
         app: postgres
     spec:
       containers:
-        - name: postgres
-          image: postgres:17
-          env:
-            - name: PGDATA
-              value: /var/lib/pgsql/data
-            - name: POSTGRES_DB
-              value: "stream_users"
-            - name: POSTGRES_USER
-              value: "ps_admin"
-            - name: POSTGRES_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-secret
-                  key: postgres-password
-            - name: POSTGRES_INITDB_ARGS
-              value: "-E UTF-8"
-          ports:
-            - containerPort: 5432
-          volumeMounts:
-            - name: storage
-              mountPath: /var/lib/pgsql/data
-            - name: init-script
-              mountPath: /docker-entrypoint-initdb.d
-      volumes:
+      - name: postgres
+        image: postgres:17
+        env:
+        - name: PGDATA
+          value: /var/lib/pgsql/data
+        - name: POSTGRES_DB
+          value: "stream_users"
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: postgres-admin-username
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: postgres-password
+        - name: POSTGRES_INITDB_ARGS
+          value: "-E UTF-8"
+        ports:
+        - containerPort: 5432
+        volumeMounts:
+        - name: storage
+          mountPath: /var/lib/pgsql/data
         - name: init-script
-          configMap:
-            name: postgres-initdb-script
+          mountPath: /docker-entrypoint-initdb.d
+      volumes:
+      - name: init-script
+        configMap:
+          name: postgres-initdb-script
   volumeClaimTemplates:
-    - metadata:
-        name: storage
-      spec:
-        accessModes: ["ReadWriteOnce"]
-        storageClassName: ""
-        resources:
-          requests:
-            storage: 1Gi
+  - metadata:
+      name: storage
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: ""
+      resources:
+        requests:
+          storage: 1Gi
