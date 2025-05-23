@@ -1,15 +1,15 @@
 from datetime import datetime, timezone
-from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
 
 class Stream(BaseModel):
     id: str | None = None
-    user_id: UUID
+    user_id: str
+    title: str = Field(default="Default title")
     status: str
     start_time: datetime = Field(
-        default=datetime.now(timezone.utc))
+        default_factory=lambda: datetime.now(timezone.utc))
     end_time: datetime | None = None
     model_config = ConfigDict(extra="ignore")
 
@@ -22,10 +22,9 @@ class IngestRequest(BaseModel):
 
 class TransmuxerRequest(BaseModel):
     stream_id: str
-    stream_key: str
+    stream_key: str | None = None
 
-    class Config:
-        extra = "ignore"
+    model_config = ConfigDict(extra="ignore")
 
 
 class TransmuxerResponse(BaseModel):
@@ -39,3 +38,10 @@ class StatusRequest(BaseModel):
 
 class TagsRequest(BaseModel):
     tags: list[str]
+
+
+class PatchRequest(BaseModel):
+    title: str | None = None
+    tags: list[str] | None = None
+    status: str | None = None
+    model_config = ConfigDict(extra="ignore")

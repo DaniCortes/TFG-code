@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Form
+from fastapi import APIRouter, Depends, Form, Header, HTTPException, Response
 
 from src.controllers.stream_info_controller import StreamController
 from src.models.stream_models import (IngestRequest, StatusRequest, Stream,
@@ -26,7 +26,7 @@ async def create_or_terminate_stream(request: Annotated[IngestRequest, Form()]):
         await controller.create_stream(stream_key)
 
     else:
-        await controller.transcode_stream(stream_key)
+        await controller.terminate_stream(stream_key)
 
 
 @router.get("/streams", response_model=list[Stream])
@@ -34,16 +34,50 @@ async def list_streams():
     return await controller.list_streams()
 
 
+@router.get("/streams/live/{user_id}", response_model=Stream)
+async def get_user_stream(user_id: str):
+    return await controller.get_live_stream(user_id=user_id)
+
+
+@router.get("/streams/live", response_model=list[Stream])
+async def list_live_streams():
+    return await controller.list_streams(status="live")
+
+
+@router.get("/streams/transcoded", response_model=list[Stream])
+async def list_transcoded_streams():
+    return await controller.list_streams(status="transcoded")
+
+
+@router.get("/streams/search", response_model=list[Stream])
+async def search_streams(response: Response, q: str, range: str = Header(...)):
+    streams, headers = await controller.search_streams(q, range)
+    for header in headers:
+        response.headers[header.split(":")[0]] = header.split(":")[1].strip()
+
+    return streams
+
+
 @router.get("/streams/{stream_id}", response_model=Stream)
 async def get_stream(stream_id: str):
-    return await controller.get_stream(stream_id)
+    return await controller.get_stream(stream_id=stream_id)
 
 
-@router.patch("/streams/status/{stream_id}", status_code=200, response_model=Stream)
+@router.patch("/streams/{stream_id}/status", status_code=200, response_model=Stream)
 async def update_stream(stream_id: str, status_request: StatusRequest):
     return await controller.update_stream_status(stream_id, status_request.status)
 
 
-@router.patch("/streams/tags/{stream_id}", status_code=200, response_model=Stream)
+@router.patch("/streams/{stream_id}/tags", status_code=200, response_model=Stream)
 async def update_stream_tags(stream_id: str, tags_request: TagsRequest, current_user: User = Depends(get_current_user)):
     return await controller.update_stream_tags(stream_id, tags_request.tags, current_user)
+
+
+@router.patch("/streams/{stream_id}/title", status_code=200, response_model=Stream)
+async def update_stream_title(stream_id: str, title: str, current_user: User = Depends(get_current_user)):
+    return await controller.update_stream_title(stream_id, title, current_user)
+
+
+@router.delete("/streams/{stream_id}", status_code=200)
+async def delete_stream(stream_id: str):
+    return await controller.delete_stream(stream_id)

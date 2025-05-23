@@ -2,6 +2,7 @@ import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from tortoise.connection import ConnectionHandler
 from tortoise.contrib.fastapi import RegisterTortoise
 
@@ -21,5 +22,13 @@ async def lifespan(app: FastAPI):
     await ConnectionHandler().close_all()
 
 app = FastAPI(lifespan=lifespan, title="Stream Information Service")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(stream_info_routes.router)

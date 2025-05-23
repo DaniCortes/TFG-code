@@ -4,26 +4,22 @@ metadata:
   name: stream-information-httproute
 spec:
   parentRefs:
-    - name: my-gateway
-      namespace: istio-system
+  - name: my-gateway
+    namespace: istio-system
   rules:
-    - matches:
-        - path:
-            type: PathPrefix
-            value: /streams
-          method: POST
-        - path:
-            type: PathPrefix
-            value: /streams
-          method: GET
-        - path:
-            type: PathPrefix
-            value: /streams/tags/
-          method: PATCH
-        - path:
-            type: PathPrefix
-            value: /streams/status/
-          method: PATCH
-      backendRefs:
-        - name: stream-information-service
-          port: 8000
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /streams/
+      method: GET
+    - path:
+        type: PathPrefix
+        value: /streams/
+      method: PATCH
+    - path:
+        type: PathPrefix
+        value: /streams
+      method: DELETE
+    backendRefs:
+    - name: stream-information-service
+      port: 8000
