@@ -1,0 +1,25 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: report-httproute
+spec:
+  parentRefs:
+    - name: my-gateway
+      namespace: istio-system
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /reports
+          method: GET
+        - path:
+            type: PathPrefix
+            value: /report
+          method: POST
+        - path:
+            type: PathPrefix
+            value: /report
+          method: PUT
+      backendRefs:
+        - name: report-service
+          port: 8000
