@@ -1,0 +1,33 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: user-routes
+spec:
+  parentRefs:
+  - name: my-gateway
+    namespace: istio-system
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /users
+      method: POST
+    - path:
+        type: PathPrefix
+        value: /users/search
+      method: GET
+    - path:
+        type: PathPrefix
+        value: /profile
+      method: GET
+    - path:
+        type: PathPrefix
+        value: /profile
+      method: PATCH
+    - path:
+        type: PathPrefix
+        value: /sessions
+      method: POST
+    backendRefs:
+    - name: user-service
+      port: 8000
