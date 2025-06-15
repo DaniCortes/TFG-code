@@ -3,6 +3,7 @@ CREATE TABLE users (
   username TEXT UNIQUE NOT NULL,
   password TEXT NOT NULL,
   biography TEXT,
+  followers_count INTEGER DEFAULT 0 NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
   last_login_date TIMESTAMP WITH TIME ZONE,
   account_status TEXT DEFAULT 'active' NOT NULL,

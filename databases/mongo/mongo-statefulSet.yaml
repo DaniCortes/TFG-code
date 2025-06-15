@@ -22,7 +22,10 @@ spec:
             - name: MONGO_INITDB_DATABASE
               value: "stream_db"
             - name: MONGO_INITDB_ROOT_USERNAME
-              value: "mongo_admin"
+              valueFrom:
+                secretKeyRef:
+                  name: mongo-secret
+                  key: mongo-admin-username
             - name: MONGO_INITDB_ROOT_PASSWORD
               valueFrom:
                 secretKeyRef:
