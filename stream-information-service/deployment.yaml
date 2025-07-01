@@ -43,6 +43,9 @@ spec:
             secretKeyRef:
               name: app-secrets
               key: POSTGRES_URL
+        volumeMounts:
+        - name: hls-data
+          mountPath: /tmp/hls/
         resources:
           requests:
             memory: "512Mi"
@@ -50,3 +53,7 @@ spec:
           limits:
             memory: "1Gi"
             cpu: "1000m"
+      volumes:
+      - name: hls-data
+        persistentVolumeClaim:
+          claimName: hls-pvc

@@ -8,3 +8,9 @@ class VideoResolutionFPSException(Exception):
     def __init__(self, stream_id: str):
         self.message = f"Video resolution or framerate of {stream_id} not supported"
         super().__init__(self.message)
+
+
+class ThumbnailGenerationException(Exception):
+    def __init__(self, stream_id: str, error: str):
+        self.message = f"Error generating thumbnail for stream {stream_id}: {error}"
+        super().__init__(self.message)

@@ -10,16 +10,10 @@ service = FollowService()
 controller = FollowController(service)
 
 
-@router.get("/followers", response_model=dict, status_code=200)
-async def get_followers(current_user_id: str = Depends(get_current_user)):
-    followers = await controller.get_followers(current_user_id)
-    return {"followers": followers}
-
-
-@router.get("/following", response_model=dict, status_code=200)
+@router.get("/follows", response_model=list, status_code=200)
 async def get_following(current_user_id: str = Depends(get_current_user)):
-    following_users = await controller.get_following(current_user_id)
-    return {"following": following_users}
+    following_users = await controller.get_follows(current_user_id)
+    return following_users
 
 
 @router.post("/follows/{following_id}", response_model=dict, status_code=201)

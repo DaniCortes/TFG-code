@@ -5,6 +5,7 @@ from typing import Dict, Set
 
 from fastapi import WebSocket
 
+from src.services.http_service import HttpService
 from src.utils.logger import logger
 from src.utils.validate_user import validate_user
 
@@ -12,6 +13,7 @@ from src.utils.validate_user import validate_user
 class WebsocketService:
     def __init__(self):
         self.active_connections: Dict[str, Dict[str, Set[WebSocket]]] = {}
+        self.http_service = HttpService()
 
     def connect(self, websocket: WebSocket, room: str, user_id: str):
         if room not in self.active_connections:
@@ -44,7 +46,6 @@ class WebsocketService:
         return user
 
     async def disconnect(self, websocket: WebSocket, room: str, user_id: str):
-
         self.active_connections[room][user_id].discard(websocket)
 
         if not self.active_connections[room][user_id]:
@@ -53,15 +54,20 @@ class WebsocketService:
             if not self.active_connections[room]:
                 del self.active_connections[room]
 
+    async def get_chat_viewers_count(self, room: str):
+        if room in self.active_connections:
+            return len(self.active_connections[room])
+        return 0
+
     async def broadcast(self, message_id: str, content: str, room: str, username: str, user_id: str):
 
         content = content.strip()
 
         if room in self.active_connections:
             for recipient_id, websockets in self.active_connections[room].items():
-
-                for websocket in websockets:
-                    await self.send_user_message(websocket, user_id, username, message_id, content)
+                if not self.http_service.is_user_muted(user_id, recipient_id):
+                    for websocket in websockets:
+                        await self.send_user_message(websocket, user_id, username, message_id, content)
 
     async def send_server_message(self, event: str, room: str, details: str = None, user_id: str = None):
 

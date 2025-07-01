@@ -1,5 +1,6 @@
 import os
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import List
 
 import httpx
@@ -7,7 +8,6 @@ from bson import ObjectId
 from bson.errors import InvalidId
 from pymongo import AsyncMongoClient
 from redis import asyncio as aioredis
-
 from src.models.stream_models import (Stream, TransmuxerRequest,
                                       TransmuxerResponse)
 from src.models.user_model import User
@@ -25,15 +25,17 @@ class StreamService:
             "TRANSCODING_SERVICE_URL", "http://transcoding-service:8000")
         self.USER_SERVICE_URL = os.getenv(
             "USER_SERVICE_URL", "http://user-service:8000")
-        self.RECORDING_BASE_PATH = os.getenv("RECORDING_BASE_PATH")
         self.HLS_BASE_PATH = os.getenv("HLS_BASE_PATH")
         self.MONGO_URL = os.getenv("MONGO_URL", "mongodb://mongo:27017")
         self.mongo_client = AsyncMongoClient(self.MONGO_URL)
         self.database = self.mongo_client.get_database("stream_db")
         self.collection = self.database.get_collection("streams")
-
+        self.are_titles_indexed = False
         self.redis = aioredis.Redis(
             host="redis", port=6379, db=0, decode_responses=True)
+
+    async def __setup_indexes(self):
+        await self.collection.create_index([("title", "text")])
 
     async def create_stream(self, user: User) -> Stream:
         stream_data = Stream(
@@ -60,7 +62,7 @@ class StreamService:
             await self.update_stream_status(stream_data.id, "transmux-error")
             raise
 
-        await self._save_stream_id_redis(user)
+        await self._save_stream_id_redis(user.stream_key, stream_data.id)
         await self.__notify_streamer_status(user.stream_key, "live")
 
         return stream_data
@@ -130,6 +132,14 @@ class StreamService:
 
         return None
 
+    def get_stream_thumbnail(self, stream_id: str) -> str:
+        thumbnail_path = Path(self.HLS_BASE_PATH) / \
+            stream_id / "thumbnail.webp"
+        if not thumbnail_path.exists():
+            raise FileNotFoundError(
+                f"Thumbnail for stream {stream_id} not found")
+        return str(thumbnail_path)
+
     async def get_live_stream(self, user_id: str) -> Stream | None:
         stream_data = await self.collection.find_one({"user_id": user_id, "status": "live"})
 
@@ -151,11 +161,12 @@ class StreamService:
     async def stop_stream(self, request: TransmuxerRequest) -> TransmuxerResponse:
         await self.__set_end_time_stream(request.stream_id)
         result = await self.__notify_transmuxer(request, method="delete")
-        if result.status != "finished_transmuxing":
+        if result.status != "finishing_transmuxing":
             raise TransmuxerException(
                 request.stream_id, "Failed to stop stream")
 
         await self.__notify_streamer_status(request.stream_key, "offline")
+        return result
 
     async def update_stream_status(self, stream_id: str, status: str) -> Stream | None:
         try:
@@ -226,7 +237,10 @@ class StreamService:
         return streams
 
     async def is_stream_owner(self, user_id: str, stream_id: str) -> bool:
-        stream = await self.collection.find_one({"_id": ObjectId(stream_id)})
+        try:
+            stream = await self.collection.find_one({"_id": ObjectId(stream_id)})
+        except InvalidId:
+            return False
         return stream["user_id"] == user_id
 
     async def can_modify_stream(self, user: User, stream_id: str) -> bool:
@@ -235,23 +249,26 @@ class StreamService:
 
         return await self.is_stream_owner(user.user_id, stream_id)
 
-    async def search_streams(self, q: str, content_range: str) -> tuple[List[Stream], int]:
+    async def search_streams(self, q: str, content_range: dict, type: str) -> tuple[List[Stream], int]:
+        if not self.are_titles_indexed:
+            await self.__setup_indexes()
+            self.are_titles_indexed = True
         if not q:
             return [], 0
         streams = []
-        async for stream in self.collection.find({"$title": {"$search": q}}).skip(content_range["start"]).limit(content_range["limit"]):
+        async for stream in self.collection.find({"$text": {"$search": q}, "status": "live" if type == "livestreams" else "transcoded"}).skip(content_range["start"]).limit(content_range["limit"]):
             stream["id"] = str(stream["_id"])
             stream["user_id"] = str(stream["user_id"])
             del stream["_id"]
 
             streams.append(Stream(**stream))
 
-        return streams, await self.__get_search_total(q)
+        return streams, await self.__get_search_total(q, type)
 
-    async def __get_search_total(self, q: str) -> int:
+    async def __get_search_total(self, q: str, type: str) -> int:
         if not q:
             return 0
-        return await self.collection.count_documents({"$title": {"$search": q}})
+        return await self.collection.count_documents({"$text": {"$search": q}, "status": "type" if type == "livestreams" else "transcoded"})
 
     async def _get_user(self, stream_key: str) -> User | None:
         async with httpx.AsyncClient() as client:
@@ -260,14 +277,16 @@ class StreamService:
             response.raise_for_status()
             user_data = response.json()
 
-            return User(user_id=user_data['user_id'], stream_key=user_data['stream_key'], account_status=user_data['account_status'])
+            return User(user_id=user_data['user_id'], username=user_data['username'], stream_key=user_data['stream_key'], account_status=user_data['account_status'])
 
     async def _save_stream_id_redis(self, stream_key: str, stream_id: str):
         await self.redis.set(stream_key, stream_id)
 
     async def _getdel_stream_id_redis(self, stream_key: str) -> str:
         try:
-            return await self.redis.getdel(stream_key)
+            stream_id = await self.redis.getdel(stream_key)
+            logger.debug(f"Fetched stream ID from Redis: {stream_id}")
+            return stream_id
         except Exception as e:
             logger.error(f"Error fetching stream ID from Redis: {str(e)}")
         return None

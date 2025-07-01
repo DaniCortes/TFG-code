@@ -20,7 +20,8 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
             response.raise_for_status()
             user_data = response.json()
             user = User(user_id=user_data['user_id'],
-                        username=user_data['username'])
+                        username=user_data['username'],
+                        is_admin=user_data['is_admin'])
             return user
 
         except httpx.HTTPStatusError:

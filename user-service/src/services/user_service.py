@@ -12,6 +12,7 @@ from src.models.user_models import SearchedUser, User, UserDB
 from src.utils.exceptions import (InvalidCredentialsException,
                                   UserBannedException)
 from src.utils.form_utils import hash_password, validate_username
+from src.utils.logger import logger
 from src.utils.stream_key_utils import generate_stream_key
 
 
@@ -19,7 +20,7 @@ class UserService:
     def __init__(self):
         self.pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
         self.AUTH_SERVICE_URL = os.getenv(
-            "AUTH_SERVICE_URL", "http://auth-service:8000/tokens")
+            "AUTH_SERVICE_URL", "http://auth-service:8000")
 
     async def register_user(self, username: str, password: str) -> User:
         validate_username(username)
@@ -35,16 +36,35 @@ class UserService:
         except Exception as e:
             raise e
 
-    async def get_user(self, user_id: str):
+    async def get_user_by_id(self, user_id: str):
         try:
-            user_db = await UserDB.get(user_id=user_id)
+            user = await UserDB.get(user_id=user_id)
 
-            user = {
-                "user_id": str(user_db.user_id),
-                "username": user_db.username,
-                "profile_picture": user_db.profile_picture,
-            }
-            return user
+            return User(
+                user_id=str(user.user_id),
+                username=user.username,
+                profile_picture=user.profile_picture,
+                stream_status=user.stream_status,
+                followers_count=user.followers_count,
+            )
+
+        except DoesNotExist as e:
+            raise e
+        except Exception as e:
+            raise e
+
+    async def get_user_by_username(self, username: str):
+        try:
+            user = await UserDB.get(username=username)
+
+            return User(
+                user_id=str(user.user_id),
+                username=user.username,
+                profile_picture=user.profile_picture,
+                stream_status=user.stream_status,
+                followers_count=user.followers_count,
+            )
+
         except DoesNotExist as e:
             raise e
         except Exception as e:
@@ -52,20 +72,41 @@ class UserService:
 
     async def get_user_by_stream_key(self, stream_key: str):
         try:
-            user_db = await UserDB.get(stream_key=stream_key)
+            user = await UserDB.get(stream_key=stream_key)
 
-            user = {
-                "user_id": str(user_db.user_id),
-                "username": user_db.username,
-                "stream_key": user_db.stream_key,
-                "account_status": user_db.account_status
+            return {
+                "user_id": str(user.user_id),
+                "username": user.username,
+                "stream_key": user.stream_key,
+                "account_status": user.account_status,
+                "followers_count": user.followers_count,
             }
 
-            return user
         except DoesNotExist as e:
             raise e
         except Exception as e:
             raise e
+
+    async def get_users_info(self, user_list: list) -> list[dict]:
+        if not user_list:
+            return []
+
+        users = await UserDB.filter(user_id__in=user_list).all()
+
+        if not users:
+            return []
+
+        user_info_list: list[dict] = []
+        for user in users:
+            user_info = {
+                "user_id": str(user.user_id),
+                "username": user.username,
+                "profile_picture": user.profile_picture,
+                "stream_status": user.stream_status,
+            }
+            user_info_list.append(user_info)
+
+        return user_info_list
 
     async def update_stream_status(self, stream_key: str, stream_status: str):
         user = await UserDB.get(stream_key=stream_key)
@@ -73,6 +114,31 @@ class UserService:
 
         await user.save()
         return {"message": "Stream status updated successfully"}
+
+    async def update_followers(self, user_id: str, inc_or_decr: str):
+        try:
+            user = await UserDB.get(user_id=user_id)
+            logger.debug(
+                f"Updating followers for user: {user.username}, current followers: {user.followers_count}")
+            if inc_or_decr == "inc":
+                user.followers_count += 1
+            elif inc_or_decr == "decr":
+                if user.followers_count > 0:
+                    user.followers_count -= 1
+                else:
+                    raise IntegrityError("Followers count cannot be negative")
+            else:
+                raise ValueError("Invalid operation")
+
+            await user.save()
+            return {"message": "Followers count updated successfully"}
+
+        except DoesNotExist as e:
+            raise e
+        except IntegrityError as e:
+            raise e
+        except Exception as e:
+            raise e
 
     async def authenticate_user(self, form_data: OAuth2PasswordRequestForm):
         try:
@@ -101,7 +167,7 @@ class UserService:
 
         try:
             async with AsyncClient() as client:
-                response = await client.post(self.AUTH_SERVICE_URL, json=jwt_payload, headers={
+                response = await client.post(f"{self.AUTH_SERVICE_URL}/tokens", json=jwt_payload, headers={
                     "Content-Type": "application/json"}
                 )
                 response.raise_for_status()
@@ -115,9 +181,6 @@ class UserService:
 
         if not self.pwd_context.verify(updates["old_password"], current_user.password):
             raise InvalidCredentialsException("Old password is incorrect")
-
-        if updates["new_password"] != updates["confirm_password"]:
-            raise IntegrityError("Passwords do not match")
 
         hashed_password = hash_password(updates["new_password"])
         current_user.password = hashed_password
@@ -161,7 +224,7 @@ class UserService:
         user_list = []
         for user in users:
             user_dict = SearchedUser(user_id=str(
-                user.user_id), username=user.username, profile_picture=user.profile_picture)
+                user.user_id), username=user.username, profile_picture=user.profile_picture, stream_status=user.stream_status, followers_count=user.followers_count)
 
             user_list.append(user_dict)
 

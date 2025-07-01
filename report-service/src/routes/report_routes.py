@@ -14,14 +14,14 @@ service = ReportService()
 controller = ReportController(service)
 
 
-@router.post("/report", status_code=201)
-async def report(report_data: Report):
-    await controller.create_report(report_data)
+@router.post("/reports", status_code=201)
+async def report(report_data: Report, current_user: User = Depends(get_current_user)):
+    await controller.create_report(report_data, current_user)
 
 
-@router.get("/reports", response_model=List[Report], status_code=206)
-async def get_reports(response: Response, current_user: User = Depends(get_current_user), range: str = Header(...)):
-    reports, headers = await controller.get_reports(current_user, range)
+@router.get("/reports/{status}", response_model=List[Report], status_code=206)
+async def get_reports(status: str, response: Response, current_user: User = Depends(get_current_user), range: str = Header(...)):
+    reports, headers = await controller.get_reports(status, current_user, range)
     for header in headers:
         response.headers[header.split(":")[0]] = header.split(":")[1].strip()
 
@@ -29,6 +29,6 @@ async def get_reports(response: Response, current_user: User = Depends(get_curre
 # https://otac0n.com/blog/2012/11/21/range-header-i-choose-you.html
 
 
-@router.put("/report/{report_id}", status_code=200)
-async def update_report_status(report_id: str, report_data: Report):
-    return await controller.update_report(report_id, report_data)
+@router.put("/reports/{report_id}", status_code=200)
+async def update_report_status(report_id: str, report_data: Report, current_user: User = Depends(get_current_user)):
+    return await controller.update_report(report_id, report_data, current_user)

@@ -4,18 +4,22 @@ metadata:
   name: auth-service-routes
 spec:
   parentRefs:
-    - name: my-gateway
-      namespace: istio-system
+  - name: my-gateway
+    namespace: istio-system
   rules:
-    - matches:
-        - path:
-            type: PathPrefix
-            value: /users/me
-          method: GET
-        - path:
-            type: PathPrefix
-            value: /tokens
-          method: POST
-      backendRefs:
-        - name: auth-service
-          port: 8000
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /users/me
+      method: GET
+    - path:
+        type: PathPrefix
+        value: /users/me
+      method: OPTIONS
+    - path:
+        type: PathPrefix
+        value: /tokens
+      method: POST
+    backendRefs:
+    - name: auth-service
+      port: 8000

@@ -6,26 +6,26 @@ metadata:
 spec:
   gatewayClassName: istio
   listeners:
-    - name: https
-      hostname: api.danielcortes.dev
-      protocol: HTTPS
-      port: 443
-      tls:
-        mode: Terminate
-        certificateRefs:
-          - name: tls-secret
-            kind: Secret
-            group: ""
-      allowedRoutes:
-        kinds:
-          - kind: HTTPRoute
-        namespaces:
-          from: All
-    - name: rtmp
-      protocol: TCP
-      port: 1935
-      allowedRoutes:
-        kinds:
-          - kind: TCPRoute
-        namespaces:
-          from: All
+  - name: https
+    hostname: api.danielcortes.dev
+    protocol: HTTPS
+    port: 443
+    tls:
+      mode: Terminate
+      certificateRefs:
+      - name: tls-secret
+        kind: Secret
+        group: ""
+    allowedRoutes:
+      kinds:
+      - kind: HTTPRoute
+      namespaces:
+        from: All
+  - name: rtmp
+    protocol: TCP
+    port: 1935
+    allowedRoutes:
+      kinds:
+      - kind: TCPRoute
+      namespaces:
+        from: All

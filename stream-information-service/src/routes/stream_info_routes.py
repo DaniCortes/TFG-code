@@ -1,7 +1,7 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Form, Header, HTTPException, Response
-
+from fastapi import APIRouter, Depends, Form, Header, Response
+from fastapi.responses import FileResponse
 from src.controllers.stream_info_controller import StreamController
 from src.models.stream_models import (IngestRequest, StatusRequest, Stream,
                                       TagsRequest)
@@ -20,7 +20,7 @@ controller = StreamController(service)
 async def create_or_terminate_stream(request: Annotated[IngestRequest, Form()]):
     call = request.call
     stream_key = request.name
-    logger.debug(f"Received {call} request for stream {stream_key}")
+    logger.debug(f"Received {call} request for stream key {stream_key}")
 
     if call == "publish":
         await controller.create_stream(stream_key)
@@ -49,9 +49,18 @@ async def list_transcoded_streams():
     return await controller.list_streams(status="transcoded")
 
 
-@router.get("/streams/search", response_model=list[Stream])
-async def search_streams(response: Response, q: str, range: str = Header(...)):
-    streams, headers = await controller.search_streams(q, range)
+@router.get("/search/livestreams", response_model=list[Stream])
+async def search_livestreams(response: Response, q: str, range: str = Header(...)):
+    streams, headers = await controller.search_streams(q, range, "livestreams")
+    for header in headers:
+        response.headers[header.split(":")[0]] = header.split(":")[1].strip()
+
+    return streams
+
+
+@router.get("/search/vods", response_model=list[Stream])
+async def search_vods(response: Response, q: str, range: str = Header(...)):
+    streams, headers = await controller.search_streams(q, range, "vods")
     for header in headers:
         response.headers[header.split(":")[0]] = header.split(":")[1].strip()
 
@@ -63,9 +72,19 @@ async def get_stream(stream_id: str):
     return await controller.get_stream(stream_id=stream_id)
 
 
+@router.get("/streams/{stream_id}/thumbnail.webp", response_class=FileResponse)
+async def get_stream_thumbnail(stream_id: str):
+    return controller.get_stream_thumbnail(stream_id=stream_id)
+
+
 @router.patch("/streams/{stream_id}/status", status_code=200, response_model=Stream)
 async def update_stream(stream_id: str, status_request: StatusRequest):
     return await controller.update_stream_status(stream_id, status_request.status)
+
+
+@router.patch("/streams/{stream_id}/visibility", status_code=200, response_model=Stream)
+async def update_stream(stream_id: str, visibility_request: StatusRequest, current_user: User = Depends(get_current_user)):
+    return await controller.update_stream_visibility(stream_id, visibility_request.status, current_user)
 
 
 @router.patch("/streams/{stream_id}/tags", status_code=200, response_model=Stream)

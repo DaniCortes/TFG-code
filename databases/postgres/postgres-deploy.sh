@@ -1,4 +1,4 @@
-# Despliegue de PostgreSQL
+#!/bin/bash
 
 cd $(dirname $(readlink -f $0))
 

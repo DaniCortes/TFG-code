@@ -1,12 +1,13 @@
 import re
+from zipfile import Path
 
 from bson.errors import InvalidId
 from fastapi.exceptions import HTTPException
-
+from fastapi.responses import FileResponse
 from src.models.stream_models import Stream, TransmuxerRequest
 from src.models.user_model import User
 from src.services.stream_info_service import StreamService
-from src.utils.exceptions import (TransmuxerException,
+from src.utils.exceptions import (StreamNotFoundException, TransmuxerException,
                                   UserAlreadyStreamingException)
 from src.utils.logger import logger
 
@@ -45,6 +46,25 @@ class StreamController:
             raise HTTPException(
                 status_code=400, detail=f"Stream ID {stream_id} is invalid")
 
+    def get_stream_thumbnail(self, stream_id: str) -> FileResponse:
+        try:
+            thumbnail = self.service.get_stream_thumbnail(stream_id)
+
+            return FileResponse(
+                thumbnail,
+                media_type="image/webp",
+                headers={"Cache-Control": "no-cache"}
+            )
+
+        except StreamNotFoundException:
+            raise HTTPException(
+                status_code=404, detail=f"Stream ID {stream_id} not found")
+        except FileNotFoundError as e:
+            logger.error(
+                f"Error getting thumbnail for stream {stream_id}: {str(e)}")
+            raise HTTPException(
+                status_code=404, detail=str(e))
+
     async def get_live_stream(self, user_id: str):
         try:
             stream = await self.service.get_live_stream(user_id=user_id)
@@ -58,13 +78,13 @@ class StreamController:
             raise HTTPException(
                 status_code=400, detail=f"Stream ID {user_id} is invalid")
 
-    async def search_streams(self, q: str, content_range_str: str):
+    async def search_streams(self, q: str, content_range_str: str, type: str):
         match = re.match(r'(\w+)=(\d+)-(\d+)', content_range_str)
         if not match:
             raise HTTPException(
                 status_code=400, detail="Invalid Range header: wrong format, expected format: item=start-end")
 
-        if match.group(1) != "livestreams" and match.group(1) != "vods":
+        if match.group(1) != type:
             raise HTTPException(
                 status_code=400, detail="Invalid Range header: wrong item")
 
@@ -79,7 +99,7 @@ class StreamController:
             raise HTTPException(
                 status_code=400, detail="Invalid Range header: start cannot be greater than end")
 
-        streams, total_streams = await self.service.search_streams(q, content_range)
+        streams, total_streams = await self.service.search_streams(q, content_range, type)
 
         accept_ranges_header = f"Accept-Ranges: {content_range['item']}"
         content_range_header = f"Content-Range: {content_range['item']} {content_range['start']}-{content_range['end']}/{total_streams}"
@@ -102,6 +122,14 @@ class StreamController:
             await self.service.transcode_stream(stream_id)
 
         return result
+
+    async def update_stream_visibility(self, stream_id: str, visibility: str, current_user: User):
+
+        if not await self.service.can_modify_stream(stream_id, current_user):
+            raise HTTPException(
+                status_code=403, detail="You are not allowed to update this stream")
+
+        await self.update_stream_status(stream_id, visibility)
 
     async def update_stream_tags(self, stream_id: str, tags: list[str], current_user: User):
         if not await self.service.can_modify_stream(stream_id, current_user):
@@ -147,13 +175,9 @@ class StreamController:
         return stream_list
 
     async def terminate_stream(self, stream_key: str):
-        user_id = await self.service._getdel_stream_id_redis(stream_key)
-        if not user_id:
-            raise HTTPException(status_code=404, detail="User not found")
-        stream_id = await self.service.get_live_stream_id(user_id)
+        stream_id = await self.service._getdel_stream_id_redis(stream_key)
         if not stream_id:
-            raise HTTPException(
-                status_code=404, detail="Stream not found")
+            raise HTTPException(status_code=404, detail="Stream not found")
 
         request = TransmuxerRequest(stream_id=stream_id, stream_key=stream_key)
         response = await self.service.stop_stream(request)
@@ -166,3 +190,4 @@ class StreamController:
         result = await self.service.delete_stream(stream_id)
         if not result:
             raise HTTPException(status_code=404, detail="Stream not found")
+        return result

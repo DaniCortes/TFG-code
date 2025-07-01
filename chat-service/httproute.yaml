@@ -4,26 +4,34 @@ metadata:
   name: chat-httproute
 spec:
   parentRefs:
-    - name: my-gateway
-      namespace: istio-system
+  - name: my-gateway
+    namespace: istio-system
   rules:
-    - matches:
-        - path:
-            type: PathPrefix
-            value: /chat/
-          method: GET
-        - path:
-            type: PathPrefix
-            value: /chat/
-          method: DELETE
-        - path:
-            type: PathPrefix
-            value: /chat/mute/
-          method: POST
-        - path:
-            type: PathPrefix
-            value: /chat/ban/
-          method: POST
-      backendRefs:
-        - name: chat-service
-          port: 8000
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /chat/
+      method: GET
+    - path:
+        type: PathPrefix
+        value: /chat/
+      method: DELETE
+    - path:
+        type: PathPrefix
+        value: /chat/mute/
+      method: POST
+    - path:
+        type: PathPrefix
+        value: /chat/ban/
+      method: POST
+    - path:
+        type: PathPrefix
+        value: /chat/unban/
+      method: POST
+    - path:
+        type: PathPrefix
+        value: /chat/
+      method: OPTIONS
+    backendRefs:
+    - name: chat-service
+      port: 8000

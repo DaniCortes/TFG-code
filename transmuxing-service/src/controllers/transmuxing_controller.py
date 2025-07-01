@@ -1,3 +1,5 @@
+import asyncio
+
 from fastapi import HTTPException
 
 from src.models.stream_models import StreamRequest, StreamResponse
@@ -21,6 +23,8 @@ class TransmuxingController:
                 status_code=400, detail=f"The following parameters cannot be empty: {', '.join(empty_params)}")
 
         try:
+            logger.debug(
+                f"Starting stream with request: {request.model_dump()}")
             stream_response = await self.service.start_transmuxing(request)
 
         except ValueError as ve:
@@ -46,7 +50,8 @@ class TransmuxingController:
                 status_code=403, detail="You are not authorized to perform this action")
 
         try:
-            await self.service.stop_transmuxing(stream_id)
+            asyncio.create_task(self.service._stop_transmuxing(stream_id))
+            return StreamResponse(stream_id=stream_id, status="finishing_transmuxing")
 
         except StreamNotFoundException as e:
             raise HTTPException(status_code=404, detail=str(e))

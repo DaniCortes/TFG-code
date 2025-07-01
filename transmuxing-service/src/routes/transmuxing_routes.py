@@ -21,6 +21,11 @@ async def start_stream(request: StreamRequest):
         raise e
 
 
+@router.delete("/streams", status_code=200, response_model=StreamResponse)
+async def terminate_stream(request: StreamRequest):
+    return await controller.stop_stream(request.stream_id, User(is_admin=True))
+
+
 @router.delete("/streams/live/{stream_id}", status_code=200, response_model=StreamResponse)
 async def stop_stream(stream_id: str, current_user: User = Depends(get_current_user)):
     return await controller.stop_stream(stream_id, current_user)

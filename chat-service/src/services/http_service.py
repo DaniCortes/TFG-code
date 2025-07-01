@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from typing import List
 
 from bson import ObjectId
-from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo import AsyncMongoClient
 
 from src.models.chat_models import Message
 
@@ -12,7 +12,7 @@ from src.models.chat_models import Message
 class HttpService:
     def __init__(self):
         self.MONGO_URL = os.getenv("MONGO_URL", "mongodb://mongo:27017")
-        self.mongo_client = AsyncIOMotorClient(self.MONGO_URL)
+        self.mongo_client = AsyncMongoClient(self.MONGO_URL)
         self.database = self.mongo_client.stream_db
         self.streams_collection = self.database.get_collection("streams")
         self.messages_collection = self.database.get_collection("messages")
@@ -23,68 +23,97 @@ class HttpService:
         return self.streams_collection.find()
 
     async def ban_user(self, banned_user_id: str, user_id: str):
-        now = datetime.now(timezone.utc)
-
         result = await self.bans_collection.update_one(
             {
                 "user_id": user_id
             },
             {
-                "$addToSet": {"banned_users": banned_user_id},
-                "$setOnInsert": {"created_at": now},
-                "$set": {"updated_at": now}
+                "$addToSet": {
+                    "banned_users": banned_user_id
+                },
+                "$setOnInsert": {
+                    "created_at": datetime.now(timezone.utc)
+                },
             },
             upsert=True
         )
 
-        return result.modified_count > 0
+        if result.modified_count > 0 or result.did_upsert:
+            await self.bans_collection.update_one(
+                {
+                    "_id": result.upserted_id,
+                },
+                {
+                    "$set": {
+                        "updated_at": datetime.now(timezone.utc)
+                    }
+                }
+            )
+            return True
+
+        return False
 
     async def is_user_banned(self, banned_user_id: str, user_or_room_id: str, is_room=False):
-        user_id = ""
+        user_id = user_or_room_id
+
         if is_room and user_or_room_id != "debug":
             result = await self.streams_collection.find_one(
                 {
                     "_id": ObjectId(user_or_room_id),
                 },
-                {"_id": 1, "user_id": 1}
-
+                {
+                    "user_id": 1
+                }
             )
 
             if result:
                 user_id = result["user_id"]
-
-        else:
-            user_id = user_or_room_id
 
         result = await self.bans_collection.find_one(
             {
                 "user_id": user_id,
                 "banned_users": banned_user_id
             },
-            {"_id": 1}
+            {
+                "_id": 1,
+            }
         )
 
         return result is not None
 
     async def unban_user(self, unbanned_user_id: str, user_id: str):
-        now = datetime.now(timezone.utc)
-
         result = await self.bans_collection.update_one(
             {
                 "user_id": user_id
             },
             {
-                "$pull": {"banned_users": unbanned_user_id},
-                "$set": {"updated_at": now}
+                "$pull": {"banned_users": unbanned_user_id}
             }
         )
 
-        return result.modified_count > 0
+        if result.modified_count > 0 or result.did_upsert:
+            await self.bans_collection.update_one(
+                {
+                    "_id": result.upserted_id,
+                },
+                {
+                    "$set": {
+                        "updated_at": datetime.now(timezone.utc)
+                    }
+                }
+            )
+            return True
+
+        return False
 
     async def get_banned_users(self, user_id: str) -> List[str]:
         result = await self.bans_collection.find_one(
-            {"user_id": user_id},
-            {"banned_users": 1}
+            {
+                "user_id": user_id,
+            },
+            {
+                "banned_users": 1
+            }
         )
 
         if result and "banned_users" in result:
@@ -93,37 +122,34 @@ class HttpService:
         return []
 
     async def mute_user(self, muted_user_id: str, user_id: str):
-        now = datetime.now(timezone.utc)
 
-        await self.mutes_collection.update_one(
+        result = await self.mutes_collection.update_one(
             {
                 "user_id": user_id
             },
             {
                 "$addToSet": {"muted_users": muted_user_id},
-                "$setOnInsert": {"created_at": now},
-                "$set": {"updated_at": now}
+                "$setOnInsert": {"created_at": datetime.now(timezone.utc)}
             },
             upsert=True
         )
 
-    async def is_user_muted(self, muted_user_id: str, user_or_room_id: str, is_room=False):
-        user_id = ""
-        if is_room and user_or_room_id != "debug":
-            result = await self.streams_collection.find_one(
+        if result.modified_count > 0 or result.did_upsert:
+            await self.mutes_collection.update_one(
                 {
-                    "_id": ObjectId(user_or_room_id),
+                    "_id": result.upserted_id,
                 },
-                {"_id": 1, "user_id": 1}
-
+                {
+                    "$set": {
+                        "updated_at": datetime.now(timezone.utc)
+                    }
+                }
             )
+            return True
 
-            if result:
-                user_id = result["user_id"]
+        return False
 
-        else:
-            user_id = user_or_room_id
-
+    async def is_user_muted(self, muted_user_id: str, user_id: str):
         result = await self.mutes_collection.find_one(
             {
                 "user_id": user_id,
@@ -135,17 +161,28 @@ class HttpService:
         return result is not None
 
     async def unmute_user(self, unmuted_user_id: str, user_id: str):
-        now = datetime.now(timezone.utc)
-
-        await self.mutes_collection.update_one(
+        result = await self.mutes_collection.update_one(
             {
                 "user_id": user_id
             },
             {
                 "$pull": {"muted_users": unmuted_user_id},
-                "$set": {"updated_at": now}
             }
         )
+
+        if result.modified_count > 0 or result.did_upsert:
+            await self.mutes_collection.update_one(
+                {
+                    "_id": result.upserted_id
+                },
+                {
+                    "$set": {"updated_at": datetime.now(timezone.utc)}
+                }
+            )
+
+            return True
+
+        return False
 
     async def get_muted_users(self, user_id: str) -> List[str]:
         result = await self.mutes_collection.find_one(
@@ -174,11 +211,20 @@ class HttpService:
     async def get_messages(self, stream_id: str, is_deleted: bool = False):
         if stream_id != "debug":
             stream_timestamp = await self.streams_collection.find_one(
-                {"_id": ObjectId(stream_id)},
-                {"timestamp": 1}
+                {
+                    "_id": ObjectId(stream_id)
+                },
+                {
+                    "timestamp": 1
+                }
             )
 
-        messages_result = await self.messages_collection.find({"stream_id": stream_id, "is_deleted": is_deleted}).to_list()
+        messages_result = await self.messages_collection.find(
+            {
+                "stream_id": stream_id,
+                "is_deleted": is_deleted
+            }
+        ).to_list()
 
         messages = []
         for message_result in messages_result:
@@ -194,10 +240,15 @@ class HttpService:
 
     async def delete_message(self, stream_id: str, message_id: str):
         await self.messages_collection.update_one(
-            {"_id": ObjectId(message_id),
-             "stream_id": stream_id
-             },
-            {"$set": {"is_deleted": True}}
+            {
+                "_id": ObjectId(message_id),
+                "stream_id": stream_id
+            },
+            {
+                "$set": {
+                    "is_deleted": True
+                }
+            }
         )
 
     async def _is_owner(self, stream_id: str, user_id: str):
@@ -209,7 +260,9 @@ class HttpService:
                 "_id": ObjectId(stream_id),
                 "user_id": user_id
             },
-            {"_id": 1}
+            {
+                "_id": 1
+            }
         )
 
         return result is not None

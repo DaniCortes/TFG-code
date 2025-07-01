@@ -11,19 +11,20 @@ spec:
     - path:
         type: PathPrefix
         value: /users
-      method: POST
     - path:
         type: PathPrefix
-        value: /users/search
+        value: /user
+    - path:
+        type: PathPrefix
+        value: /search/users
       method: GET
     - path:
         type: PathPrefix
-        value: /profile
-      method: GET
+        value: /search/users
+      method: OPTIONS
     - path:
         type: PathPrefix
         value: /profile
-      method: PATCH
     - path:
         type: PathPrefix
         value: /sessions

@@ -1,16 +1,19 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routes.distribution_routes import router as stream_router
+
+from src.routes.live_routes import router as live_router
+from src.routes.vod_routes import router as vod_router
 
 app = FastAPI(title="HLS Distribution Service")
 
-# Configure CORS
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, replace with specific origins
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["GET"],
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 
-app.include_router(stream_router)
+app.include_router(live_router)
+app.include_router(vod_router)

@@ -5,8 +5,8 @@ from fastapi.security import OAuth2PasswordRequestForm
 from httpx import HTTPStatusError, RequestError
 from tortoise.exceptions import DoesNotExist, IntegrityError
 
-from models.profile_update_models import (PasswordUpdateRequest,
-                                          ProfileUpdateRequest)
+from src.models.profile_update_models import (PasswordUpdateRequest,
+                                              ProfileUpdateRequest)
 from src.models.user_models import User
 from src.services.user_service import UserService
 from src.utils.exceptions import (InvalidCredentialsException,
@@ -52,9 +52,28 @@ class UserController:
             raise HTTPException(
                 status_code=500, detail=str(e) if str(e) else "Internal server error")
 
-    async def get_user(self, user_id: str):
+    async def get_user_by_id(self, user_id: str):
         try:
-            user = await self.service.get_user(user_id)
+            user = await self.service.get_user_by_id(user_id)
+            return user
+
+        except DoesNotExist:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    async def get_users_info(self, user_list: list) -> list[dict]:
+        try:
+            users_info = await self.service.get_users_info(user_list)
+            return users_info
+
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    async def get_user_by_username(self, username: str) -> User:
+        try:
+            user = await self.service.get_user_by_username(username)
             return user
 
         except DoesNotExist:
@@ -128,6 +147,23 @@ class UserController:
             updated_user.access_token = await generate_token(str(updated_user.user_id), updated_user.username, updated_user.is_admin)
 
         return updated_user
+
+    async def update_followers(self, user_id: str, inc_or_decr: str):
+        if inc_or_decr not in ["inc", "decr"]:
+            raise HTTPException(status_code=400, detail="Invalid operation")
+
+        try:
+            updated_user = await self.service.update_followers(user_id, inc_or_decr)
+            return updated_user
+
+        except DoesNotExist:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        except IntegrityError as e:
+            raise HTTPException(status_code=409, detail=str(e))
+
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
 
     async def search_users(self, q: str, content_range_str: str):
         match = re.match(r'(\w+)=(\d+)-(\d+)', content_range_str)

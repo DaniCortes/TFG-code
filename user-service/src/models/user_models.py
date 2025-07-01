@@ -1,7 +1,7 @@
 from uuid import UUID
 
 from pydantic import BaseModel, Field, model_serializer
-from tortoise import Model, Self, fields
+from tortoise import Model, fields
 from tortoise.models import Self
 
 
@@ -11,6 +11,7 @@ class UserDB(Model):
     password = fields.TextField(null=False)
     biography = fields.TextField(null=True)
     profile_picture = fields.TextField(default='default_profile_picture.jpg')
+    followers_count = fields.IntField(null=False, default=0)
     last_login_date = fields.DatetimeField(null=True)
     account_status = fields.TextField(null=False, default='active')
     stream_status = fields.TextField(null=False, default='offline')
@@ -38,6 +39,7 @@ class User(BaseModel):
     username: str | None = None
     biography: str | None = None
     profile_picture: str | None = None
+    followers_count: int | None = None
     stream_key: str | None = None
     is_admin: bool = Field(default=False)
     access_token: str | None = None
@@ -49,14 +51,17 @@ class User(BaseModel):
 
         if self.is_admin:
             data["is_admin"] = True
-            data["user_id"] = str(self.user_id)
 
         data.update({
+            "user_id": str(self.user_id),
             "username": self.username,
+            "followers_count": self.followers_count,
             "biography": self.biography,
             "profile_picture": self.profile_picture,
-            "stream_key": self.stream_key,
         })
+
+        if self.stream_key:
+            data["stream_key"] = self.stream_key
 
         if self.access_token:
             data["access_token"] = self.access_token
@@ -68,3 +73,9 @@ class SearchedUser(BaseModel):
     user_id: str
     username: str
     profile_picture: str
+    stream_status: str
+    followers_count: int
+
+
+class UserList(BaseModel):
+    users: list[str]

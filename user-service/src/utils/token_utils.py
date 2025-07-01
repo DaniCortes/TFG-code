@@ -21,7 +21,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
             user_data = response.json()
             user = await UserDB.get(user_id=user_data['user_id'])
 
-            return User(user_id=user.user_id, username=user.username, biography=user.biography, profile_picture=user.profile_picture, stream_key=user.stream_key, is_admin=user.is_admin)
+            return User(user_id=user.user_id, username=user.username, biography=user.biography, profile_picture=user.profile_picture, stream_key=user.stream_key, is_admin=user.is_admin, followers_count=user.followers_count)
 
         except DoesNotExist:
             raise HTTPException(status_code=404, detail="User not found")

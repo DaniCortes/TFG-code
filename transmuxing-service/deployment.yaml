@@ -15,47 +15,49 @@ spec:
         app: transmuxing-service
     spec:
       containers:
-        - name: transmuxing-service
-          image: transmuxing-service:latest
-          imagePullPolicy: IfNotPresent
-          ports:
-            - containerPort: 8000
-          env:
-            - name: HLS_SEGMENT_TIME
-              value: "6"
-            - name: RTMP_INPUT_BASE
-              value: "rtmp://rtmp-ingest-service/live/"
-            - name: HLS_OUTPUT_BASE
-              value: "/tmp/hls/"
-            - name: RECORDING_OUTPUT_BASE
-              value: "/tmp/recordings/"
-            - name: MONGO_URL
-              valueFrom:
-                secretKeyRef:
-                  name: app-secrets
-                  key: MONGO_URL
-            - name: AUTH_SERVICE_URL
-              value: "http://auth-service:8000"
-            - name: TRANSCODING_SERVICE_URL
-              value: "http://transcoding-service:8000"
-            - name: STREAM_INFO_SERVICE_URL
-              value: "http://stream-info-service:8000"
-          volumeMounts:
-            - name: hls-data
-              mountPath: /tmp/hls
-            - name: recording-data
-              mountPath: /tmp/recordings
-          resources:
-            requests:
-              memory: "512Mi"
-              cpu: "1"
-            limits:
-              memory: "1Gi"
-              cpu: "2"
-      volumes:
+      - name: transmuxing-service
+        image: transmuxing-service:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8000
+        env:
+        - name: HLS_SEGMENT_TIME
+          value: "4"
+        - name: HLS_LIST_SIZE
+          value: "3"
+        - name: RTMP_INPUT_BASE
+          value: "rtmp://rtmp-ingest-service/live/"
+        - name: HLS_OUTPUT_BASE
+          value: "/tmp/hls/"
+        - name: RECORDING_OUTPUT_BASE
+          value: "/tmp/recordings/"
+        - name: MONGO_URL
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: MONGO_URL
+        - name: AUTH_SERVICE_URL
+          value: "http://auth-service:8000"
+        - name: TRANSCODING_SERVICE_URL
+          value: "http://transcoding-service:8000"
+        - name: STREAM_INFORMATION_SERVICE_URL
+          value: "http://stream-information-service:8000"
+        volumeMounts:
         - name: hls-data
-          persistentVolumeClaim:
-            claimName: hls-pvc
+          mountPath: /tmp/hls
         - name: recording-data
-          persistentVolumeClaim:
-            claimName: record-pvc
+          mountPath: /tmp/recordings
+        resources:
+          requests:
+            memory: "1.5Gi"
+            cpu: "3"
+          limits:
+            memory: "3Gi"
+            cpu: "4"
+      volumes:
+      - name: hls-data
+        persistentVolumeClaim:
+          claimName: hls-pvc
+      - name: recording-data
+        persistentVolumeClaim:
+          claimName: record-pvc

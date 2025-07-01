@@ -4,22 +4,26 @@ metadata:
   name: report-httproute
 spec:
   parentRefs:
-    - name: my-gateway
-      namespace: istio-system
+  - name: my-gateway
+    namespace: istio-system
   rules:
-    - matches:
-        - path:
-            type: PathPrefix
-            value: /reports
-          method: GET
-        - path:
-            type: PathPrefix
-            value: /report
-          method: POST
-        - path:
-            type: PathPrefix
-            value: /report
-          method: PUT
-      backendRefs:
-        - name: report-service
-          port: 8000
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /reports
+      method: GET
+    - path:
+        type: PathPrefix
+        value: /reports
+      method: POST
+    - path:
+        type: PathPrefix
+        value: /reports
+      method: PUT
+    - path:
+        type: PathPrefix
+        value: /reports
+      method: OPTIONS
+    backendRefs:
+    - name: report-service
+      port: 8000

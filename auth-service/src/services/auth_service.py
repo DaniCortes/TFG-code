@@ -1,5 +1,6 @@
 import os
 from datetime import datetime, timedelta, timezone
+
 import jwt
 
 from src.models.token_models import TokenData
@@ -33,7 +34,8 @@ class AuthService:
                 self.ALGORITHM], options=decode_options)
             user_id = str(payload.get("sub"))
             username = str(payload.get("preferred_username"))
-            is_admin = bool(payload.get("is_admin"))
+            is_admin = bool(payload.get("is_admin")) if payload.get(
+                "is_admin") is not None else False
             if internal_use:
                 exp = datetime.fromtimestamp(payload.get("exp"))
                 return TokenData(user_id=user_id, username=username, is_admin=is_admin, exp=exp)

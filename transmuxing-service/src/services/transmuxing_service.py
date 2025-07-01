@@ -1,22 +1,28 @@
 import asyncio
 import os
 import shutil
+from time import perf_counter
 
 import httpx
+
 from src.models.stream_models import StreamRequest, StreamResponse
 from src.utils.exceptions import FFmpegProcessError, StreamNotFoundException
+from src.utils.logger import logger
 
 
 class TransmuxingService:
     def __init__(self):
-        self.HLS_SEGMENT_TIME = int(os.getenv("HLS_SEGMENT_TIME", "6"))
+        self.STREAM_INFORMATION_SERVICE_URL = os.getenv(
+            'STREAM_INFORMATION_SERVICE_URL', 'http://stream-information-service:8000')
+        self.HLS_SEGMENT_TIME = int(os.getenv("HLS_SEGMENT_TIME", "2"))
+        self.HLS_LIST_SIZE = int(os.getenv("HLS_LIST_SIZE", "2"))
         self.HLS_OUTPUT_BASE = os.getenv('HLS_OUTPUT_BASE', '/tmp/hls/')
         self.RECORDING_OUTPUT_BASE = os.getenv(
             'RECORDING_OUTPUT_BASE', '/tmp/recordings/')
         self.RTMP_INGEST_SERVICE_URL = os.getenv(
             'RTMP_INGEST_SERVICE_URL', 'rtmp://rtmp-ingest-service/live/')
-        self.active_streams: dict[str, asyncio.Task] = {}
-        self.processes: dict[str, asyncio.subprocess.Process] = {}
+        self.active_streams: dict[str, set[asyncio.Task]] = {}
+        self.processes: dict[str, set[asyncio.subprocess.Process]] = {}
 
     async def start_transmuxing(self, request: StreamRequest) -> StreamResponse:
         input_url = f"{self.RTMP_INGEST_SERVICE_URL}{request.stream_key}"
@@ -25,28 +31,45 @@ class TransmuxingService:
 
         os.makedirs(output_base, exist_ok=True)
         os.makedirs(os.path.dirname(recording_file), exist_ok=True)
+        logger.info(f"Folder created: {output_base}")
 
         command = [
-            'ffmpeg', '-loglevel', 'fatal',
-            '-i', input_url,
+            'ffmpeg', '-loglevel', 'debug',
+            '-re', '-i', input_url,
+            '-map', '0:a', '-map', '0:v',
             '-c:v', 'copy',
             '-c:a', 'copy',
             '-f', 'hls',
             '-hls_time', f'{self.HLS_SEGMENT_TIME}',
-            '-hls_list_size', '6',
+            '-hls_list_size', f'{self.HLS_LIST_SIZE}',
+            '-hls_allow_cache', '0',
             '-hls_segment_type', 'fmp4',
-            '-hls_segment_filename', f"{output_base}/%d.mp4",
+            '-hls_segment_filename', f'{output_base}/%d.mp4',
             '-hls_flags', 'delete_segments+append_list',
-            f"{output_base}/playlist.m3u8",
+            '-master_pl_name', 'master.m3u8',
+            f"{output_base}/stream.m3u8",
             '-f', 'mp4',
             '-movflags', '+frag_keyframe+empty_moov+faststart',
-            recording_file
+            recording_file,
         ]
 
-        task = asyncio.create_task(
+        thumbnail_command = [
+            'ffmpeg', '-loglevel', 'debug',
+            '-i', input_url,
+            '-f', 'image2',
+            '-vf', r'fps=1/15',
+            '-c:v', 'libwebp',
+            '-update', '1',
+            f'{output_base}/thumbnail.webp'
+        ]
+
+        main_task = asyncio.create_task(
             self.__run_ffmpeg(request.stream_id, command))
 
-        self.active_streams[request.stream_id] = task
+        thumbnail_task = asyncio.create_task(
+            self.__run_ffmpeg(request.stream_id, thumbnail_command))
+
+        self.active_streams[request.stream_id] = {main_task, thumbnail_task}
 
         return StreamResponse(stream_id=request.stream_id, status="live")
 
@@ -58,28 +81,26 @@ class TransmuxingService:
                 stderr=asyncio.subprocess.PIPE
             )
 
-            self.processes[stream_id] = process
+            if not self.processes.get(stream_id):
+                self.processes[stream_id] = set()
+
+            self.processes[stream_id].add(process)
 
             stdout, stderr = await process.communicate()
 
-            if process.returncode != 0 and stderr:
+            if process.returncode != 0 and process.returncode != 255:
+                logger.error(
+                    f"FFmpeg process for stream {stream_id} failed with return code {process.returncode}")
+
                 raise FFmpegProcessError(stream_id, stderr.decode())
 
-        except FFmpegProcessError:
+        except FFmpegProcessError as e:
+            logger.error(f"FFmpeg process error: {e}")
             await self.__notify_stream_service(stream_id, "error_transmuxing")
 
-        except Exception:
-            pass
-
-        finally:
-            if stream_id in self.processes:
-                del self.processes[stream_id]
-
-            if stream_id in self.active_streams:
-                del self.active_streams[stream_id]
-
-            self.remove_contents_from_directory(
-                f"{self.HLS_OUTPUT_BASE}{stream_id}")
+        except Exception as e:
+            logger.error(f"Unexpected error: {e}")
+            await self.__notify_stream_service(stream_id, "error_transmuxing")
 
     def remove_contents_from_directory(self, directory: str):
         for filename in os.listdir(directory):
@@ -93,48 +114,59 @@ class TransmuxingService:
                     shutil.rmtree(file_path)
 
             except Exception as e:
+                logger.error(
+                    f"Failed to delete {file_path} : {str(e)}")
                 print(f"Failed to delete {file_path} : {str(e)}")
 
-    async def stop_transmuxing(self, stream_id: str) -> StreamResponse:
+    async def _stop_transmuxing(self, stream_id: str):
         if stream_id not in self.active_streams:
             raise StreamNotFoundException(stream_id)
 
-        process = self.processes.get(stream_id)
+        if stream_id in self.processes:
+            processes = self.processes.get(stream_id)
 
-        if process:
             del self.processes[stream_id]
-            try:
-                process.terminate()
 
-                try:
-                    await asyncio.wait_for(process.wait(), timeout=10.0)
-
-                except asyncio.TimeoutError:
-                    process.kill()
+            for process in processes:
+                if process.returncode is None:
                     await process.wait()
 
-            except ProcessLookupError:
-                pass
+        if stream_id in self.active_streams:
+            tasks = self.active_streams[stream_id]
 
-        task = self.active_streams[stream_id]
-
-        if task:
             del self.active_streams[stream_id]
 
-            if not task.done():
-                task.cancel()
+            for task in tasks:
+                if not task.done():
+                    task.cancel()
                 try:
                     await task
-                except asyncio.CancelledError:
+                except asyncio.CancelledError as e:
                     pass
-        await self.__notify_stream_service(stream_id, "terminated")
+
+        if ((int(self.HLS_SEGMENT_TIME) + int(self.HLS_LIST_SIZE))*2) > 10:
+            await asyncio.sleep((self.HLS_SEGMENT_TIME + self.HLS_LIST_SIZE) * 2 + 10)
+        else:
+            await asyncio.sleep(10)
+
+        self.remove_contents_from_directory(
+            f"{self.HLS_OUTPUT_BASE}{stream_id}")
+        logger.debug(
+            f"Removed contents from directory: {self.HLS_OUTPUT_BASE}{stream_id}")
+
+        await self.__notify_stream_service(stream_id, "finished_transmuxing")
 
     async def __notify_stream_service(self, stream_id: str, status: str):
         try:
             async with httpx.AsyncClient() as client:
-                response = await client.patch(f"http://stream-info-service:8000/streams/status/{stream_id}", json={"status": status})
+                response = await client.patch(f"{self.STREAM_INFORMATION_SERVICE_URL}/streams/{stream_id}/status", json={"status": status})
                 response.raise_for_status()
         except httpx.HTTPStatusError:
+            logger.error(
+                f"Failed to notify stream service for stream {stream_id}")
             print(f"Failed to notify stream service for stream {stream_id}")
-        except Exception:
-            print(f"Failed to notify stream service for stream {stream_id}")
+        except Exception as e:
+            logger.error(
+                f"Failed to notify stream service for stream {stream_id} (general): {str(e)}")
+            print(
+                f"Failed to notify stream service for stream {stream_id}: {str(e)}")

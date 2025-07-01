@@ -24,6 +24,8 @@ spec:
             secretKeyRef:
               name: app-secrets
               key: POSTGRES_URL
+        - name: AUTH_SERVICE_URL
+          value: "http://auth-service:8000"
         resources:
           requests:
             memory: "128Mi"

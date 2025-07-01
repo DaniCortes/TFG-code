@@ -12,10 +12,11 @@ class ReportController:
     def __init__(self, service: ReportService):
         self.service = service
 
-    async def create_report(self, report_data: Report) -> Report:
+    async def create_report(self, report_data: Report, current_user: User) -> Report:
+        report_data.reporter_user_id = current_user.id
         return await self.service.create_report(report_data)
 
-    async def get_reports(self, current_user: User, content_range_str: str) -> Tuple[List[Report], List[str]]:
+    async def get_reports(self, status: str, current_user: User, content_range_str: str) -> Tuple[List[Report], List[str]]:
         if current_user.is_admin:
 
             match = re.match(r"(\w+)=(\d+)-(\d+)", content_range_str)
@@ -38,7 +39,7 @@ class ReportController:
                 raise HTTPException(
                     status_code=400, detail="Invalid Range header: start cannot be greater than end")
 
-            reports, total_reports = await self.service.get_reports(content_range)
+            reports, total_reports = await self.service.get_reports(status, content_range)
 
             accept_ranges_header = f"Accept-Ranges: {content_range['item']}"
             content_range_header = f"Content-Range: {content_range['item']} {content_range['start']}-{content_range['end']}/{total_reports}"
@@ -48,7 +49,12 @@ class ReportController:
             return reports, headers
 
         else:
-            raise HTTPException(status_code=403)
+            raise HTTPException(
+                status_code=403, detail="You are not authorized to access this resource.")
 
-    async def update_report(self, report_id: str, report_data: Report) -> Report:
-        return await self.service.update_report(report_id, report_data)
+    async def update_report(self, report_id: str, report_data: Report, current_user: User) -> Report:
+        if not current_user.is_admin:
+            raise HTTPException(
+                status_code=403, detail="You are not authorized to update this report.")
+
+        return await self.service.update_report(report_id, report_data, current_user)

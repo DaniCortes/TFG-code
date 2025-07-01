@@ -1,7 +1,7 @@
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
-  name: stream-information-httproute
+  name: stream-information-routes
 spec:
   parentRefs:
   - name: my-gateway
@@ -11,15 +11,22 @@ spec:
     - path:
         type: PathPrefix
         value: /streams/
+    - path:
+        type: PathPrefix
+        value: /search/livestreams
       method: GET
     - path:
         type: PathPrefix
-        value: /streams/
-      method: PATCH
+        value: /search/vods
+      method: GET
     - path:
         type: PathPrefix
-        value: /streams
-      method: DELETE
+        value: /search/livestreams
+      method: OPTIONS
+    - path:
+        type: PathPrefix
+        value: /search/vods
+      method: OPTIONS
     backendRefs:
     - name: stream-information-service
       port: 8000

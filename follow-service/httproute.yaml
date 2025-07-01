@@ -10,15 +10,23 @@ spec:
   - matches:
     - path:
         type: PathPrefix
-        value: /follow/
+        value: /follows/
       method: POST
+    - path:
+        type: PathPrefix
+        value: /follows/
+      method: OPTIONS
     - path:
         type: PathPrefix
         value: /follows
       method: GET
     - path:
         type: PathPrefix
-        value: /follow/
+        value: /followers
+      method: GET
+    - path:
+        type: PathPrefix
+        value: /follows/
       method: DELETE
     backendRefs:
     - name: follow-service

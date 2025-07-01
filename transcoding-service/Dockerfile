@@ -1,4 +1,4 @@
-FROM dnl01/ffmpeg-service:python-3.12-slim-bookworm
+FROM dnl01/ffmpeg-service:python-3.13-slim-bookworm
 
 WORKDIR /app
 
@@ -10,4 +10,4 @@ COPY src/ ./src/
 
 EXPOSE 8000
 
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "src.main:app", "--log-level", "debug", "--host", "0.0.0.0", "--port", "8000"]

@@ -15,7 +15,7 @@ kubectl rollout status deployment/auth-service
 
 
 echo "Eliminando imagen de servicio de autenticación"
-sleep 2
+sleep 4
 docker rmi auth-service:latest
 
 echo "Construyendo imagen de servicio de autenticación"

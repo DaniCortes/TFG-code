@@ -1,4 +1,3 @@
-# deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -6,7 +5,7 @@ metadata:
   labels:
     app: hls-distribution-service
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: hls-distribution-service
@@ -16,36 +15,32 @@ spec:
         app: hls-distribution-service
     spec:
       containers:
-        - name: hls-distribution-service
-          image: hls-distribution-service:latest
-          ports:
-            - containerPort: 8000
-          env:
-            - name: HLS_STREAM_BASE
-              value: /tmp/hls
-          volumeMounts:
-            - name: recordings-volume
-              mountPath: /tmp/recordings
-          resources:
-            requests:
-              cpu: "200m"
-              memory: "256Mi"
-            limits:
-              cpu: "500m"
-              memory: "512Mi"
-          livenessProbe:
-            httpGet:
-              path: /health
-              port: 8000
-            initialDelaySeconds: 30
-            periodSeconds: 30
-          readinessProbe:
-            httpGet:
-              path: /health
-              port: 8000
-            initialDelaySeconds: 15
-            periodSeconds: 15
+      - name: hls-distribution-service
+        image: hls-distribution-service:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8000
+        env:
+        - name: HLS_STREAM_BASE
+          value: /tmp/hls
+        - name: RECORDING_BASE
+          value: /tmp/recordings
+        volumeMounts:
+        - name: hls-data
+          mountPath: /tmp/hls
+        - name: record-data
+          mountPath: /tmp/recordings
+        resources:
+          requests:
+            cpu: "250m"
+            memory: "256Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
       volumes:
-        - name: recordings-volume
-          persistentVolumeClaim:
-            claimName: recordings-pvc # Your existing PVC
+      - name: hls-data
+        persistentVolumeClaim:
+          claimName: hls-pvc
+      - name: record-data
+        persistentVolumeClaim:
+          claimName: record-pvc

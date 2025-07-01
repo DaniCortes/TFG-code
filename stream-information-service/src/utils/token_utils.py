@@ -3,7 +3,6 @@ import os
 import httpx
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
-from tortoise.exceptions import DoesNotExist
 
 from src.models.user_model import User
 
@@ -22,8 +21,14 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
 
             return User(**user_data)
 
-        except DoesNotExist:
-            raise HTTPException(status_code=404, detail="User not found")
+        except httpx.HTTPError as e:
+            if e.response.status_code == 401:
+                raise HTTPException(
+                    status_code=401, detail="Invalid authentication credentials")
+            elif e.response.status_code == 403:
+                raise HTTPException(status_code=403, detail="Access forbidden")
+            elif e.response.status_code == 404:
+                raise HTTPException(status_code=404, detail="User not found")
         except httpx.HTTPStatusError:
             detail = response.json().get("detail")
             raise HTTPException(

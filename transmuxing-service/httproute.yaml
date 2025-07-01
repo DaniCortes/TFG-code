@@ -4,14 +4,14 @@ metadata:
   name: transmuxing-httproute
 spec:
   parentRefs:
-    - name: my-gateway
-      namespace: istio-system
+  - name: my-gateway
+    namespace: istio-system
   rules:
-    - matches:
-        - path:
-            type: PathPrefix
-            value: /streams/live/
-          method: DELETE
-      backendRefs:
-        - name: transmuxing-service
-          port: 8000
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /streams/live/
+      method: DELETE
+    backendRefs:
+    - name: transmuxing-service
+      port: 8000

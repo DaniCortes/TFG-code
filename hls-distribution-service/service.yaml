@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: hls-distribution-service
+spec:
+  selector:
+    app: hls-distribution-service
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
