@@ -101,9 +101,12 @@ kubectl apply -f ./redis-service.yaml
 cd ../..
 
 # Despliegue de servicios
+eval $(minikube docker-env)
 
 echo "Aplicando servicio de registro..."
 cd user-service
+
+docker build -t user-service:latest .
 
 kubectl apply -f ./deployment.yaml
 kubectl apply -f ./service.yaml
@@ -114,6 +117,8 @@ cd ..
 echo "Aplicando servicio de autenticación..."
 cd auth-service
 
+docker build -t auth-service:latest .
+
 kubectl apply -f ./deployment.yaml
 kubectl apply -f ./service.yaml
 kubectl apply -f ./httproute.yaml
@@ -122,6 +127,8 @@ cd ..
 
 echo "Aplicando servicio de información de transmisiones..."
 cd stream-information-service
+
+docker build -t stream-information-service:latest .
 
 kubectl apply -f ./deployment.yaml
 kubectl apply -f ./service.yaml
@@ -142,6 +149,8 @@ cd ..
 echo "Aplicando servicio de transmux..."
 cd transmuxing-service
 
+docker build -t transmuxing-service:latest .
+
 kubectl apply -f ./deployment.yaml
 kubectl apply -f ./service.yaml
 kubectl apply -f ./httproute.yaml
@@ -151,6 +160,8 @@ cd ..
 echo "Aplicando servicio de codificación..."
 cd transcoding-service
 
+docker build -t transcoding-service:latest .
+
 kubectl apply -f ./deployment.yaml
 kubectl apply -f ./service.yaml
 
@@ -159,12 +170,16 @@ cd ..
 echo "Aplicando servicio de chat..."
 cd chat-service
 
+docker build -t chat-service:latest .
+
 kubectl apply -f ./deployment.yaml
 kubectl apply -f ./service.yaml
 kubectl apply -f ./httproute.yaml
 
 echo "Aplicando servicio de reportes..."
 cd report-service
+
+docker build -t report-service:latest .
 
 kubectl apply -f ./deployment.yaml
 kubectl apply -f ./service.yaml
@@ -175,11 +190,25 @@ cd ..
 echo "Aplicando servicio de distribución HLS..."
 cd hls-distribution-service
 
+docker build -t hls-distribution-service:latest .
+
 kubectl apply -f ./deployment.yaml
 kubectl apply -f ./service.yaml
 kubectl apply -f ./httproute.yaml
 
 cd ..
 
+echo "Aplicando servicio de seguimientos..."
+cd follow-service
+
+docker build -t follow-service:latest .
+
+kubectl apply -f ./deployment.yaml
+kubectl apply -f ./service.yaml
+kubectl apply -f ./httproute.yaml
+
+eval $(minikube docker-env -u)
+
+cd ..
 
 echo "¡Despliegue completo!"
