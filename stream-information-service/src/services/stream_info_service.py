@@ -8,6 +8,7 @@ from bson import ObjectId
 from bson.errors import InvalidId
 from pymongo import AsyncMongoClient
 from redis import asyncio as aioredis
+
 from src.models.stream_models import (Stream, TransmuxerRequest,
                                       TransmuxerResponse)
 from src.models.user_model import User
@@ -243,7 +244,7 @@ class StreamService:
             return False
         return stream["user_id"] == user_id
 
-    async def can_modify_stream(self, user: User, stream_id: str) -> bool:
+    async def can_modify_stream(self, stream_id: str, user: User) -> bool:
         if user.is_admin:
             return True
 

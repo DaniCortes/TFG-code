@@ -40,8 +40,5 @@ class TagsRequest(BaseModel):
     tags: list[str]
 
 
-class PatchRequest(BaseModel):
-    title: str | None = None
-    tags: list[str] | None = None
-    status: str | None = None
-    model_config = ConfigDict(extra="ignore")
+class TitleRequest(BaseModel):
+    title: str

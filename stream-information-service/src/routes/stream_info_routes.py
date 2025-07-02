@@ -2,9 +2,10 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Form, Header, Response
 from fastapi.responses import FileResponse
+
 from src.controllers.stream_info_controller import StreamController
 from src.models.stream_models import (IngestRequest, StatusRequest, Stream,
-                                      TagsRequest)
+                                      TagsRequest, TitleRequest)
 from src.models.user_model import User
 from src.services.stream_info_service import StreamService
 from src.utils.logger import logger
@@ -93,8 +94,8 @@ async def update_stream_tags(stream_id: str, tags_request: TagsRequest, current_
 
 
 @router.patch("/streams/{stream_id}/title", status_code=200, response_model=Stream)
-async def update_stream_title(stream_id: str, title: str, current_user: User = Depends(get_current_user)):
-    return await controller.update_stream_title(stream_id, title, current_user)
+async def update_stream_title(stream_id: str, title: TitleRequest, current_user: User = Depends(get_current_user)):
+    return await controller.update_stream_title(stream_id, title.title, current_user)
 
 
 @router.delete("/streams/{stream_id}", status_code=200)
